@@ -202,3 +202,16 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .odeme-satir { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; }
 .odeme-satir.yesil b { color: #1F7A3E; }
 .odeme-satir.kalin { border-top: 1px solid var(--cizgi); padding-top: 4px; font-size: 15px; }
+/* Dil seçici (çoklu dil) */
+.dil-secici { display: flex; gap: 2px; border: 1px solid var(--cizgi); border-radius: 999px; padding: 2px; }
+.dil-secici button { border: 0; background: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--yazi-3); padding: 4px 8px; border-radius: 999px; cursor: pointer; }
+.dil-secici button.etkin { background: var(--yazi); color: var(--zemin); }
+@media (max-width: 640px) { .ust .kap { gap: 10px; } .marka span[data-yazi] { display: none; } }
+/* Beden dağılımı / asorti (Siparişlerim) */
+.dagilim { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.beden-cip { font-size: 11px; border: 1px solid var(--cizgi); border-radius: 6px; padding: 0 5px; color: var(--yazi-2); white-space: nowrap; }
+.beden-cip i { font-style: normal; color: var(--yazi-3); margin-right: 3px; }
+.asorti-rozet { font-size: 11px; font-weight: 700; color: var(--vurgu); margin-right: 4px; white-space: nowrap; }
+.sip-tablo td { white-space: normal; }
+.sip-tablo .model-hucre { align-items: flex-start; }
+.sip-tablo th { white-space: normal; overflow: visible; }

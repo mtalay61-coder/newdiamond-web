@@ -7,17 +7,18 @@
   <meta name="description" content="New Diamond: ayakkabı tasarımı ve üretimi. Koleksiyon ve toptan sipariş." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="site.css?v=1652" />
+  <link rel="stylesheet" href="site.css?v=1654" />
 </head>
 <body>
   <header class="ust">
     <div class="kap">
       <a class="marka" href="#"><span class="marka-isaret" data-logo>ND</span><span data-yazi="marka">New Diamond</span></a>
       <nav class="menu">
-        <a href="#koleksiyon">Koleksiyon</a>
-        <a href="#uretim" data-uretim-menu>Üretim</a>
-        <a href="#iletisim" class="dugme">İletişim</a>
+        <a href="#koleksiyon" data-t="menuKoleksiyon">Koleksiyon</a>
+        <a href="#uretim" data-uretim-menu data-t="menuUretim">Üretim</a>
+        <a href="#iletisim" class="dugme" data-t="menuIletisim">İletişim</a>
       </nav>
+      <div class="dil-secici" data-dil-secici aria-label="Dil / Language"></div>
     </div>
   </header>
 
@@ -61,12 +62,12 @@
         <div class="bolum-bas"><div><h2 data-yazi="iletisimBaslik">İletişim</h2><p data-yazi="iletisimAlt">Toptan sipariş ve iş birliği için bize ulaşın.</p></div></div>
         <div class="iletisim">
           <div class="kartlar" style="grid-template-columns:1fr">
-            <div class="kart" data-site-kart><h3>Telefon</h3><p><a data-site="telefon" href="#"></a></p></div>
-            <div class="kart" data-site-kart><h3>E-posta</h3><p><a data-site="eposta" href="#"></a></p></div>
-            <div class="kart" data-site-kart><h3>Adres</h3><p data-site="adres"></p></div>
-            <div class="kart" data-site-kart><h3>Instagram</h3><p><a data-site-href="instagram" href="#">Profilimiz</a></p></div>
+            <div class="kart" data-site-kart><h3 data-t="telefon">Telefon</h3><p><a data-site="telefon" href="#"></a></p></div>
+            <div class="kart" data-site-kart><h3 data-t="eposta">E-posta</h3><p><a data-site="eposta" href="#"></a></p></div>
+            <div class="kart" data-site-kart><h3 data-t="adres">Adres</h3><p data-site="adres"></p></div>
+            <div class="kart" data-site-kart><h3>Instagram</h3><p><a data-site-href="instagram" href="#" data-t="profilimiz">Profilimiz</a></p></div>
           </div>
-          <div data-site-kart><iframe class="harita" data-harita title="Konum" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+          <div data-site-kart><iframe class="harita" data-harita data-t-title="konum" title="Konum" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
         </div>
       </div>
     </section>
@@ -75,7 +76,8 @@
   <footer><div class="kap"><span>© <span data-yil></span> <span data-yazi="marka">New Diamond</span></span><span data-yazi="altYazi"></span></div></footer>
   <a class="wa" data-whatsapp href="#" target="_blank" rel="noopener">WhatsApp</a>
 
-  <script src="ayarlar.js?v=1652"></script>
-  <script src="site.js?v=1652"></script>
+  <script src="dil.js?v=1654"></script>
+  <script src="ayarlar.js?v=1654"></script>
+  <script src="site.js?v=1654"></script>
 </body>
 </html>
