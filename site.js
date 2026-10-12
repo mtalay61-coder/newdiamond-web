@@ -2,29 +2,89 @@
 (function () {
   const S = window.SITE || {};
   const doldurulmus = (v) => v && !/^\[.*\]$/.test(v);
+  const rpc = (ad, govde) => fetch(S.supabaseUrl.replace(/\/$/, "") + "/rest/v1/rpc/" + ad, {
+    method: "POST",
+    headers: { apikey: S.supabaseAnahtar, Authorization: "Bearer " + S.supabaseAnahtar, "Content-Type": "application/json" },
+    body: JSON.stringify(govde || {}),
+  }).then(async (r) => {
+    const metin = await r.text();
+    let veri = null; try { veri = metin ? JSON.parse(metin) : null; } catch (e) { /* düz metin */ }
+    if (!r.ok) throw new Error((veri && veri.message) || metin || ("HTTP " + r.status));
+    return veri;
+  });
 
-  // [data-site="alan"] öğelerine ayardaki değer yazılır; doldurulmamış alanın kartı gizlenir.
-  document.querySelectorAll("[data-site]").forEach((el) => {
-    const v = S[el.dataset.site];
-    if (!doldurulmus(v)) { const k = el.closest("[data-site-kart]"); if (k) k.hidden = true; return; }
-    el.textContent = v;
-    if (el.dataset.site === "telefon") el.href = "tel:" + v.replace(/[^\d+]/g, "");
-    if (el.dataset.site === "eposta") el.href = "mailto:" + v;
+  // SİTE AYARLARI ERP'DEN (v1.647.0 — kullanıcı: "uygulama içerisinden yapalım, site tasarımı v.s tüm hepsini"):
+  // ERP › Tanımlar › Firma › Web Sitesi → `site_ayarlari()`. Gelmezse (ağ / fonksiyon kurulmamış) sayfadaki yazılar
+  // ve ayarlar.js kalır. En çok 4 sn beklenir; site boş beklemesin.
+  const zamanAsimi = new Promise((coz) => setTimeout(() => coz(null), 4000));
+  Promise.race([rpc("site_ayarlari").catch(() => null), zamanAsimi]).then((a) => {
+    if (a && typeof a === "object") uygula(a);
+    iletisimDoldur();
+    portal();
   });
-  document.querySelectorAll("[data-site-href]").forEach((el) => {
-    const v = S[el.dataset.siteHref];
-    if (doldurulmus(v)) el.href = v; else { el.hidden = true; const k = el.closest("[data-site-kart]"); if (k) k.hidden = true; }
-  });
-  const wa = document.querySelector("[data-whatsapp]");
-  if (wa) { if (S.whatsapp) wa.href = "https://wa.me/" + S.whatsapp; else wa.hidden = true; }
-  const harita = document.querySelector("[data-harita]");
-  if (harita) {
-    if (S.haritaSorgusu) harita.src = "https://www.google.com/maps?q=" + encodeURIComponent(S.haritaSorgusu) + "&output=embed";
-    else { const k = harita.closest("[data-site-kart]"); if (k) k.hidden = true; }
+
+  function uygula(a) {
+    Object.keys(a).forEach((k) => { if (a[k] !== "" && a[k] != null) S[k] = a[k]; });
+    // Yazılar: boş gelen alan sayfadakini ezmez (altYazi hariç — o isteğe bağlı, boşsa boş).
+    document.querySelectorAll("[data-yazi]").forEach((el) => {
+      const v = a[el.dataset.yazi];
+      if (typeof v === "string" && (v.trim() || el.dataset.yazi === "altYazi")) el.textContent = v;
+    });
+    if (a.marka) document.title = a.marka + (a.ustEtiket ? " — " + a.ustEtiket : "");
+    if (/^#[0-9a-f]{6}$/i.test(a.vurguRengi || "")) {
+      document.documentElement.style.setProperty("--vurgu", a.vurguRengi);
+      document.documentElement.style.setProperty("--vurgu-koyu", "color-mix(in srgb, " + a.vurguRengi + " 72%, #000)");
+    }
+    if (a.tema === "acik" || a.tema === "koyu") document.documentElement.dataset.tema = a.tema;
+    if (a.logo && /^(data:image\/|https:)/.test(a.logo)) {
+      const yer = document.querySelector("[data-logo]");
+      if (yer) { const img = document.createElement("img"); img.src = a.logo; img.alt = ""; yer.replaceChildren(img); yer.classList.add("resimli"); }
+    }
+    const kartlar = document.querySelector("[data-uretim-kartlari]");
+    const bolum = document.getElementById("uretim");
+    if (a.uretimGoster === false) {
+      if (bolum) bolum.hidden = true;
+      document.querySelectorAll("[data-uretim-menu]").forEach((m) => { m.hidden = true; });
+    } else if (kartlar && Array.isArray(a.uretimKartlari) && a.uretimKartlari.length) {
+      kartlar.replaceChildren(...a.uretimKartlari.map((k) => {
+        const d = document.createElement("div"); d.className = "kart";
+        const i = document.createElement("div"); i.className = "ikon"; i.textContent = k.ikon || "";
+        const h = document.createElement("h3"); h.textContent = k.baslik || "";
+        const p = document.createElement("p"); p.textContent = k.metin || "";
+        d.append(...(k.ikon ? [i] : []), h, p);
+        return d;
+      }));
+    }
   }
-  const yil = document.querySelector("[data-yil]");
-  if (yil) yil.textContent = new Date().getFullYear();
 
+  // [data-site="alan"] öğelerine değer yazılır; doldurulmamış alanın kartı gizlenir.
+  function iletisimDoldur() {
+    document.querySelectorAll("[data-site]").forEach((el) => {
+      const v = S[el.dataset.site]; const k = el.closest("[data-site-kart]");
+      if (!doldurulmus(v)) { if (k) k.hidden = true; return; }
+      if (k) k.hidden = false;
+      el.textContent = v;
+      if (el.dataset.site === "telefon") el.href = "tel:" + v.replace(/[^\d+]/g, "");
+      if (el.dataset.site === "eposta") el.href = "mailto:" + v;
+    });
+    document.querySelectorAll("[data-site-href]").forEach((el) => {
+      const v = S[el.dataset.siteHref]; const k = el.closest("[data-site-kart]");
+      if (doldurulmus(v) && /^https:\/\//.test(v)) { el.href = v; el.hidden = false; if (k) k.hidden = false; }
+      else { el.hidden = true; if (k) k.hidden = true; }
+    });
+    const wa = document.querySelector("[data-whatsapp]");
+    if (wa) { const n = String(S.whatsapp || "").replace(/\D/g, ""); if (n) { wa.href = "https://wa.me/" + n; wa.hidden = false; } else wa.hidden = true; }
+    const harita = document.querySelector("[data-harita]");
+    if (harita) {
+      const k = harita.closest("[data-site-kart]");
+      if (S.haritaSorgusu) { harita.src = "https://www.google.com/maps?q=" + encodeURIComponent(S.haritaSorgusu) + "&output=embed"; if (k) k.hidden = false; }
+      else if (k) k.hidden = true;
+    }
+    const yil = document.querySelector("[data-yil]");
+    if (yil) yil.textContent = new Date().getFullYear();
+  }
+
+  function portal() {
   // ================= MÜŞTERİ PORTALI =================
   // Koleksiyon herkese açık DEĞİL: müşteri, firmanın ERP'de cari kartından verdiği kodla girer. Sunucu (`portal()`,
   // site-portal.sql) yalnız o müşteriye görünür modelleri ve ONA ÖZEL fiyatları döndürür; sipariş `portal_siparis()` ile
@@ -36,16 +96,6 @@
     al() { try { return localStorage.getItem(KOD_ANAHTARI) || ""; } catch (e) { return ""; } },
     yaz(v) { try { if (v) localStorage.setItem(KOD_ANAHTARI, v); else localStorage.removeItem(KOD_ANAHTARI); } catch (e) { /* gizli pencere */ } },
   };
-  const rpc = (ad, govde) => fetch(S.supabaseUrl.replace(/\/$/, "") + "/rest/v1/rpc/" + ad, {
-    method: "POST",
-    headers: { apikey: S.supabaseAnahtar, Authorization: "Bearer " + S.supabaseAnahtar, "Content-Type": "application/json" },
-    body: JSON.stringify(govde),
-  }).then(async (r) => {
-    const metin = await r.text();
-    let veri = null; try { veri = metin ? JSON.parse(metin) : null; } catch (e) { /* düz metin */ }
-    if (!r.ok) throw new Error((veri && veri.message) || metin || ("HTTP " + r.status));
-    return veri;
-  });
   const HATA = {
     GECERSIZ_KOD: "Kod geçersiz ya da erişiminiz kapatılmış.",
     GUNLUK_SINIR: "Bugün için sipariş sınırına ulaştınız; lütfen bizi arayın.",
@@ -224,4 +274,5 @@
   }
 
   if (kod) yukle(kod); else girisCiz();
+  }
 })();

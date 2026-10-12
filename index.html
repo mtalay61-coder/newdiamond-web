@@ -12,10 +12,10 @@
 <body>
   <header class="ust">
     <div class="kap">
-      <a class="marka" href="#"><span class="marka-isaret">ND</span>New Diamond</a>
+      <a class="marka" href="#"><span class="marka-isaret" data-logo>ND</span><span data-yazi="marka">New Diamond</span></a>
       <nav class="menu">
         <a href="#koleksiyon">Koleksiyon</a>
-        <a href="#uretim">Üretim</a>
+        <a href="#uretim" data-uretim-menu>Üretim</a>
         <a href="#iletisim" class="dugme">İletişim</a>
       </nav>
     </div>
@@ -23,12 +23,12 @@
 
   <main>
     <div class="kap giris">
-      <span class="ust-etiket">Ayakkabı üretimi</span>
-      <h1>Deriden sevkiyata, her adımda ustalık.</h1>
-      <p>New Diamond; modelden kesime, sayadan montaja kadar bütün üretimi kendi atölyesinde yapar. Müşteri kodunuzla koleksiyonu inceleyin ve siparişinizi doğrudan verin.</p>
+      <span class="ust-etiket" data-yazi="ustEtiket">Ayakkabı üretimi</span>
+      <h1 data-yazi="baslik">Deriden sevkiyata, her adımda ustalık.</h1>
+      <p data-yazi="aciklama">New Diamond; modelden kesime, sayadan montaja kadar bütün üretimi kendi atölyesinde yapar. Müşteri kodunuzla koleksiyonu inceleyin ve siparişinizi doğrudan verin.</p>
       <div class="dugmeler">
-        <a class="btn dolu" href="#koleksiyon">Müşteri girişi</a>
-        <a class="btn bos" href="#iletisim">Teklif isteyin</a>
+        <a class="btn dolu" href="#koleksiyon" data-yazi="dugme1">Müşteri girişi</a>
+        <a class="btn bos" href="#iletisim" data-yazi="dugme2">Teklif isteyin</a>
       </div>
     </div>
 
@@ -36,8 +36,8 @@
       <div class="kap">
         <div class="bolum-bas">
           <div>
-            <h2>Koleksiyon</h2>
-            <p>Müşterilerimize özel: modeller, size özel fiyatlar ve sipariş.</p>
+            <h2 data-yazi="koleksiyonBaslik">Koleksiyon</h2>
+            <p data-yazi="koleksiyonAlt">Müşterilerimize özel: modeller, size özel fiyatlar ve sipariş.</p>
           </div>
         </div>
         <div data-portal></div>
@@ -46,8 +46,8 @@
 
     <section id="uretim">
       <div class="kap">
-        <div class="bolum-bas"><div><h2>Nasıl üretiyoruz</h2><p>Her çift aynı titizlikle, aşama aşama izlenerek.</p></div></div>
-        <div class="kartlar">
+        <div class="bolum-bas"><div><h2 data-yazi="uretimBaslik">Nasıl üretiyoruz</h2><p data-yazi="uretimAlt">Her çift aynı titizlikle, aşama aşama izlenerek.</p></div></div>
+        <div class="kartlar" data-uretim-kartlari>
           <div class="kart"><div class="ikon">✂</div><h3>Kesim</h3><p>Seçilmiş deriler, modele özel kalıplarla kesilir; fire en aza indirilir.</p></div>
           <div class="kart"><div class="ikon">🧵</div><h3>Saya</h3><p>Usta ellerde dikilen saya, modelin karakterini belirler.</p></div>
           <div class="kart"><div class="ikon">🔨</div><h3>Montaj ve taban</h3><p>Taban ve saya sağlam, uzun ömürlü bir birleşimle buluşur.</p></div>
@@ -58,7 +58,7 @@
 
     <section id="iletisim">
       <div class="kap">
-        <div class="bolum-bas"><div><h2>İletişim</h2><p>Toptan sipariş ve iş birliği için bize ulaşın.</p></div></div>
+        <div class="bolum-bas"><div><h2 data-yazi="iletisimBaslik">İletişim</h2><p data-yazi="iletisimAlt">Toptan sipariş ve iş birliği için bize ulaşın.</p></div></div>
         <div class="iletisim">
           <div class="kartlar" style="grid-template-columns:1fr">
             <div class="kart" data-site-kart><h3>Telefon</h3><p><a data-site="telefon" href="#"></a></p></div>
@@ -72,7 +72,7 @@
     </section>
   </main>
 
-  <footer><div class="kap"><span>© <span data-yil></span> New Diamond</span></div></footer>
+  <footer><div class="kap"><span>© <span data-yil></span> <span data-yazi="marka">New Diamond</span></span><span data-yazi="altYazi"></span></div></footer>
   <a class="wa" data-whatsapp href="#" target="_blank" rel="noopener">WhatsApp</a>
 
   <script src="ayarlar.js"></script>

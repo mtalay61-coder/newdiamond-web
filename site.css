@@ -11,8 +11,13 @@
   --koyu: #1F1814;
   --r: 14px;
 }
+/* Tema ERP'den seçilebilir (v1.647.0): "otomatik" cihaza uyar; "acik"/"koyu" data-tema ile zorlanır. */
+:root[data-tema="koyu"] {
+  --zemin: #171210; --kart: #221B17; --yazi: #F3EBE3; --yazi-2: #C9BBAE; --yazi-3: #9A8B7F;
+  --vurgu: #D49A5E; --vurgu-koyu: #E8B47E; --cizgi: #3A2F28; --koyu: #0E0B09;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="acik"]) {
     --zemin: #171210; --kart: #221B17; --yazi: #F3EBE3; --yazi-2: #C9BBAE; --yazi-3: #9A8B7F;
     --vurgu: #D49A5E; --vurgu-koyu: #E8B47E; --cizgi: #3A2F28; --koyu: #0E0B09;
   }
@@ -132,3 +137,5 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .siparis-giris select { width: 0; }
 .sepet-git { position: fixed; left: 16px; bottom: 18px; z-index: 20; background: var(--yazi); color: var(--zemin); text-decoration: none; font-weight: 700; padding: 12px 16px; border-radius: 999px; box-shadow: 0 10px 24px rgba(0,0,0,.18); }
 @media (min-width: 901px) { .sepet-git { display: none; } }
+.marka-isaret.resimli { background: transparent; width: auto; min-width: 36px; }
+.marka-isaret img { height: 36px; width: auto; max-width: 140px; object-fit: contain; border-radius: 8px; }
