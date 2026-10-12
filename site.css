@@ -195,3 +195,10 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .talep-kalem .kucuk { margin-left: auto; }
 .sepet-satir { align-items: center; }
 .sip-kart .ekstre td { vertical-align: middle; }
+.sip-tablo { table-layout: fixed; min-width: 640px; }
+.sip-tablo td, .sip-tablo th { overflow: hidden; text-overflow: ellipsis; }
+.sip-tablo th.sayi { text-align: right; }
+.odeme-ozet { display: grid; gap: 4px; justify-self: end; min-width: 260px; background: var(--kart); border: 1px solid var(--cizgi); border-radius: var(--r); padding: 10px 14px; }
+.odeme-satir { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; }
+.odeme-satir.yesil b { color: #1F7A3E; }
+.odeme-satir.kalin { border-top: 1px solid var(--cizgi); padding-top: 4px; font-size: 15px; }

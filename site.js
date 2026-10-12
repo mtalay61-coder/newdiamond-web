@@ -273,6 +273,21 @@
     return Object.entries(t).map(([pb, v]) => para(v, pb)).join(" + ");
   }
 
+  // KAPORA / ÖDENEN (kullanıcı: "siparişe dayalı kapora var ise o da görünsün"). Sunucu ERP'nin kuralıyla siparişe bağlı
+  // tahsilatları ve KDV dahil toplamı verir; kalan yalnız aynı para biriminde hesaplanır (kur çevirmesi yapılmaz).
+  function odemeOzeti(s) {
+    const odenen = Object.entries(s.odenen || {}).filter(([, t]) => Number(t));
+    const kdvli = s.kdvDahil || {};
+    const kdvFarkli = Object.entries(kdvli).some(([pb, t]) => Math.abs(Number(t) - (s.kalemler || []).filter((k) => (k.paraBirimi || "TRY") === pb).reduce((a, k) => a + Number(k.tutar || 0), 0)) > 0.005);
+    if (!odenen.length && !kdvFarkli) return null;
+    const satir = (ad, deger, sinif) => el("div", { class: "odeme-satir " + (sinif || "") }, el("span", {}, ad), el("b", {}, deger));
+    const kalan = Object.entries(kdvli).map(([pb, t]) => [pb, Math.max(0, Math.round((Number(t) - Number((s.odenen || {})[pb] || 0)) * 100) / 100)]);
+    return el("div", { class: "odeme-ozet" },
+      kdvFarkli ? satir("KDV dahil toplam", Object.entries(kdvli).map(([pb, t]) => para(Number(t), pb)).join(" + ")) : null,
+      odenen.length ? satir("Ödenen (kapora)", odenen.map(([pb, t]) => para(Number(t), pb)).join(" + "), "yesil") : null,
+      odenen.length ? satir("Kalan", kalan.map(([pb, t]) => para(t, pb)).join(" + "), "kalin") : null);
+  }
+
   function siparislerCiz() {
     const talepler = hesap.talepler || [];
     const sip = hesap.siparisler || [];
@@ -293,8 +308,11 @@
           s.belgeNo ? el("span", { class: "kucuk" }, "Belge " + s.belgeNo) : null,
           s.teslimTarihi ? el("span", { class: "kucuk" }, "Termin " + tarihTR(s.teslimTarihi)) : null,
           el("span", { class: "rozet " + durum[1] }, durum[0])),
-        el("div", { class: "tablo-kap" }, el("table", { class: "ekstre" },
-          el("thead", {}, el("tr", {}, ...["Model", "Renk", "Sipariş", "Teslim", "Kalan", "Fiyat", "Tutar"].map((b) => el("th", {}, b)))),
+        // SABİT SÜTUNLAR (kullanıcı: "sütunlar kayıyor"): her sipariş ayrı tablo, genişlik içerikten hesaplanınca
+        // siparişten siparişe kayıyordu → table-layout: fixed + aynı colgroup.
+        el("div", { class: "tablo-kap" }, el("table", { class: "ekstre sip-tablo" },
+          el("colgroup", {}, ...[30, 16, 9, 9, 9, 12, 15].map((w) => el("col", { style: "width:" + w + "%" }))),
+          el("thead", {}, el("tr", {}, ...["Model", "Renk", "Sipariş", "Teslim", "Kalan", "Fiyat", "Tutar"].map((b, i) => el("th", { class: i >= 2 ? "sayi" : "" }, b)))),
           el("tbody", {}, ...(s.kalemler || []).map((k) => el("tr", {},
             el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), k.urunAd || "")), el("td", {}, k.renk || ""), el("td", { class: "sayi" }, String(k.miktar)),
             el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim))),
@@ -302,7 +320,7 @@
             el("td", { class: "sayi" }, k.fiyat != null ? para(Number(k.fiyat), k.paraBirimi) : ""),
             el("td", { class: "sayi" }, k.tutar != null ? para(Number(k.tutar), k.paraBirimi) : "")))),
           el("tfoot", {}, el("tr", {}, el("td", {}, "Toplam"), el("td", {}, ""), el("td", { class: "sayi" }, String(top.m)), el("td", { class: "sayi" }, String(top.t)), el("td", { class: "sayi" }, String(Math.max(0, top.m - top.t))),
-            el("td", {}, ""), el("td", { class: "sayi" }, tutarToplami(s.kalemler)))))));
+            el("td", {}, ""), el("td", { class: "sayi" }, tutarToplami(s.kalemler)))))), odemeOzeti(s));
     });
     if (!talepBlok && !kartlar.length) return el("div", { class: "bilgi" }, "Henüz siparişiniz yok.");
     return el("div", { class: "hesap" }, talepBlok, kartlar.length ? el("section", { class: "hesap-blok" }, el("h3", {}, "Siparişleriniz"), ...kartlar) : null);
