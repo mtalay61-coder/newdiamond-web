@@ -186,3 +186,12 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .giris-kutu { min-width: 0; font: inherit; font-size: 16px; padding: 11px 14px; border: 1.5px solid var(--cizgi); border-radius: 999px; background: var(--zemin); color: var(--yazi); }
 .giris-kutu:focus { outline: none; border-color: var(--vurgu); }
 .portal-giris { max-width: 640px; }
+/* Ürün resimleri — sepet, talepler, siparişler (v1.650.0) */
+.minik { flex: none; width: 44px; height: 44px; border-radius: 8px; background: #F1EAE2; border: 1px solid var(--cizgi); overflow: hidden; display: inline-block; vertical-align: middle; }
+.minik img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.model-hucre { display: inline-flex; align-items: center; gap: 8px; }
+.talep-kalemler { display: grid; gap: 6px; }
+.talep-kalem { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.talep-kalem .kucuk { margin-left: auto; }
+.sepet-satir { align-items: center; }
+.sip-kart .ekstre td { vertical-align: middle; }

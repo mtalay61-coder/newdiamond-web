@@ -257,6 +257,15 @@
     return el("div", { class: "hesap" }, arac, el("p", { class: "kucuk yazdir-baslik" }, (veri.unvan || "") + " · " + tarihTR(hesap.baslangic) + " – " + tarihTR(hesap.bitis)), ...bloklar, cekBlok);
   }
 
+  // Küçük ürün resmi (v1.650.0 — "sitede ürün resimleri de olsun, sipariş verilen için"). Resimler `portal_hesap`
+  // cevabında model+renk başına bir kez (`resimler["urunId|renk"]`); yoksa boş kutu.
+  function minik(src, alt) {
+    const k = el("span", { class: "minik" });
+    if (src && /^(data:image\/|https:)/.test(src)) k.append(el("img", { src, alt: alt || "", loading: "lazy" }));
+    return k;
+  }
+  const hesapResmi = (k) => (hesap && hesap.resimler && hesap.resimler[(k.urunId || "") + "|" + (k.renk || "")]) || "";
+
   function siparislerCiz() {
     const talepler = hesap.talepler || [];
     const sip = hesap.siparisler || [];
@@ -264,6 +273,8 @@
       ...talepler.map((t) => el("div", { class: "sip-kart" },
         el("div", { class: "sip-bas" }, el("b", {}, tarihTR(String(t.tarih).slice(0, 10))), el("span", {}, t.toplamCift + " çift"),
           el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : "sari") }, t.durum === "reddedildi" ? "Kabul edilmedi" : "Onay bekliyor")),
+        el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => el("div", { class: "talep-kalem" },
+          minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, k.urunAd || ""), " · ", k.renk || ""), el("span", { class: "kucuk" }, k.miktar + " çift")))),
         t.not ? el("div", { class: "kucuk" }, t.not) : null))) : null;
     const kartlar = sip.map((s) => {
       const top = (s.kalemler || []).reduce((a, k) => ({ m: a.m + Number(k.miktar || 0), t: a.t + Number(k.teslim || 0) }), { m: 0, t: 0 });
@@ -276,7 +287,7 @@
         el("div", { class: "tablo-kap" }, el("table", { class: "ekstre" },
           el("thead", {}, el("tr", {}, ...["Model", "Renk", "Sipariş", "Teslim", "Kalan"].map((b) => el("th", {}, b)))),
           el("tbody", {}, ...(s.kalemler || []).map((k) => el("tr", {},
-            el("td", {}, k.urunAd || ""), el("td", {}, k.renk || ""), el("td", { class: "sayi" }, String(k.miktar)),
+            el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), k.urunAd || "")), el("td", {}, k.renk || ""), el("td", { class: "sayi" }, String(k.miktar)),
             el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim)))))),
           el("tfoot", {}, el("tr", {}, el("td", {}, "Toplam"), el("td", {}, ""), el("td", { class: "sayi" }, String(top.m)), el("td", { class: "sayi" }, String(top.t)), el("td", { class: "sayi" }, String(Math.max(0, top.m - top.t))))))));
     });
@@ -375,7 +386,8 @@
       g.satirlar.push(x);
     });
     const liste = el("div", { class: "sepet-liste" }, ...gruplar.map((g) => el("div", { class: "sepet-satir" },
-      el("div", {}, el("b", {}, g.urunAd), " · ", g.renk,
+      (() => { const u = ((veri && veri.modeller) || []).find((m) => m.id === g.urunId); return minik(u ? ((u.renk_resimleri || {})[g.renk] || u.kapak_resmi) : "", g.urunAd); })(),
+      el("div", { style: "flex:1;min-width:0" }, el("b", {}, g.urunAd), " · ", g.renk,
         el("div", { class: "kucuk" }, bedenSirala(g.satirlar.map((s) => s.beden)).map((b) => b + "×" + g.satirlar.find((s) => s.beden === b).miktar).join("  "))),
       el("button", { type: "button", class: "bag", onclick: () => { sepet = sepet.filter((s) => !(s.urunId === g.urunId && s.renk === g.renk)); yenileSepet(); } }, "Kaldır"))));
     const not = el("textarea", { rows: "2", placeholder: "Not (teslim tarihi, kutu, etiket…)", maxlength: "1000" });
