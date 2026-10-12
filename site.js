@@ -266,6 +266,13 @@
   }
   const hesapResmi = (k) => (hesap && hesap.resimler && hesap.resimler[(k.urunId || "") + "|" + (k.renk || "")]) || "";
 
+  // Para birimi başına toplam ("₺5.120,00 + $60,00"); para birimleri toplanmaz.
+  function tutarToplami(kalemler) {
+    const t = {};
+    (kalemler || []).forEach((k) => { if (k.tutar != null) t[k.paraBirimi || "TRY"] = (t[k.paraBirimi || "TRY"] || 0) + Number(k.tutar); });
+    return Object.entries(t).map(([pb, v]) => para(v, pb)).join(" + ");
+  }
+
   function siparislerCiz() {
     const talepler = hesap.talepler || [];
     const sip = hesap.siparisler || [];
@@ -274,7 +281,9 @@
         el("div", { class: "sip-bas" }, el("b", {}, tarihTR(String(t.tarih).slice(0, 10))), el("span", {}, t.toplamCift + " çift"),
           el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : "sari") }, t.durum === "reddedildi" ? "Kabul edilmedi" : "Onay bekliyor")),
         el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => el("div", { class: "talep-kalem" },
-          minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, k.urunAd || ""), " · ", k.renk || ""), el("span", { class: "kucuk" }, k.miktar + " çift")))),
+          minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, k.urunAd || ""), " · ", k.renk || ""),
+          el("span", { class: "kucuk" }, k.miktar + " çift" + (k.tutar != null ? " · " + para(Number(k.tutar), k.paraBirimi) : ""))))),
+        (t.kalemler || []).some((k) => k.tutar != null) ? el("div", { class: "kucuk", style: "text-align:right" }, "Toplam " + tutarToplami(t.kalemler)) : null,
         t.not ? el("div", { class: "kucuk" }, t.not) : null))) : null;
     const kartlar = sip.map((s) => {
       const top = (s.kalemler || []).reduce((a, k) => ({ m: a.m + Number(k.miktar || 0), t: a.t + Number(k.teslim || 0) }), { m: 0, t: 0 });
@@ -285,11 +294,15 @@
           s.teslimTarihi ? el("span", { class: "kucuk" }, "Termin " + tarihTR(s.teslimTarihi)) : null,
           el("span", { class: "rozet " + durum[1] }, durum[0])),
         el("div", { class: "tablo-kap" }, el("table", { class: "ekstre" },
-          el("thead", {}, el("tr", {}, ...["Model", "Renk", "Sipariş", "Teslim", "Kalan"].map((b) => el("th", {}, b)))),
+          el("thead", {}, el("tr", {}, ...["Model", "Renk", "Sipariş", "Teslim", "Kalan", "Fiyat", "Tutar"].map((b) => el("th", {}, b)))),
           el("tbody", {}, ...(s.kalemler || []).map((k) => el("tr", {},
             el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), k.urunAd || "")), el("td", {}, k.renk || ""), el("td", { class: "sayi" }, String(k.miktar)),
-            el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim)))))),
-          el("tfoot", {}, el("tr", {}, el("td", {}, "Toplam"), el("td", {}, ""), el("td", { class: "sayi" }, String(top.m)), el("td", { class: "sayi" }, String(top.t)), el("td", { class: "sayi" }, String(Math.max(0, top.m - top.t))))))));
+            el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim))),
+            // Fiyat + tutar (kullanıcı: "sipariş fiyat ve tutar da görünsün"). Beden fiyatları farklıysa fiyat ortalamadır.
+            el("td", { class: "sayi" }, k.fiyat != null ? para(Number(k.fiyat), k.paraBirimi) : ""),
+            el("td", { class: "sayi" }, k.tutar != null ? para(Number(k.tutar), k.paraBirimi) : "")))),
+          el("tfoot", {}, el("tr", {}, el("td", {}, "Toplam"), el("td", {}, ""), el("td", { class: "sayi" }, String(top.m)), el("td", { class: "sayi" }, String(top.t)), el("td", { class: "sayi" }, String(Math.max(0, top.m - top.t))),
+            el("td", {}, ""), el("td", { class: "sayi" }, tutarToplami(s.kalemler)))))));
     });
     if (!talepBlok && !kartlar.length) return el("div", { class: "bilgi" }, "Henüz siparişiniz yok.");
     return el("div", { class: "hesap" }, talepBlok, kartlar.length ? el("section", { class: "hesap-blok" }, el("h3", {}, "Siparişleriniz"), ...kartlar) : null);
