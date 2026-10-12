@@ -181,3 +181,8 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
   .yazdir-baslik { display: block; font-size: 14px; color: #000; }
   .tablo-kap, .bakiye-kutu { border-color: #999; background: #fff; }
 }
+.giris-alanlar { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 10px; }
+@media (max-width: 560px) { .giris-alanlar { grid-template-columns: 1fr; } }
+.giris-kutu { min-width: 0; font: inherit; font-size: 16px; padding: 11px 14px; border: 1.5px solid var(--cizgi); border-radius: 999px; background: var(--zemin); color: var(--yazi); }
+.giris-kutu:focus { outline: none; border-color: var(--vurgu); }
+.portal-giris { max-width: 640px; }

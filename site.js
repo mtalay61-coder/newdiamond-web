@@ -91,13 +91,13 @@
   // TALEP olarak ERP'ye düşer, firma onaylayınca siparişe çevrilir. Fiyatı sunucu yeniden bulur — buradaki gösterim içindir.
   const alan = document.querySelector("[data-portal]");
   if (!alan) return;
-  const KOD_ANAHTARI = "nd-portal-kod";
+  const KOD_ANAHTARI = "nd-portal-oturum";   // v1.649: oturum anahtarı (eski "nd-portal-kod" artık geçersiz)
   const depo = {
     al() { try { return localStorage.getItem(KOD_ANAHTARI) || ""; } catch (e) { return ""; } },
     yaz(v) { try { if (v) localStorage.setItem(KOD_ANAHTARI, v); else localStorage.removeItem(KOD_ANAHTARI); } catch (e) { /* gizli pencere */ } },
   };
   const HATA = {
-    GECERSIZ_KOD: "Kod geçersiz ya da erişiminiz kapatılmış.",
+    GECERSIZ_KOD: "Oturumunuz sona erdi ya da erişiminiz kapatıldı. Lütfen yeniden giriş yapın.",
     GUNLUK_SINIR: "Bugün için sipariş sınırına ulaştınız; lütfen bizi arayın.",
     GECERSIZ_MODEL: "Sepetteki bir model artık listenizde değil. Sayfayı yenileyip tekrar deneyin.",
     GECERSIZ_RENK_BEDEN: "Sepetteki bir renk/beden artık yok. Sayfayı yenileyip tekrar deneyin.",
@@ -124,18 +124,37 @@
 
   function bilgi(metin) { alan.replaceChildren(el("div", { class: "bilgi" }, metin)); }
 
+  // KULLANICI ADI + ŞİFRE (v1.649.0 — kullanıcı: "müşteri giriş yaparken kullanıcı adı ve şifre ile girsin").
+  // `portal_giris` doğruysa 30 günlük oturum anahtarı döner (yanlışsa boş); anahtar `kod` olarak saklanır ve bütün
+  // çağrılara geçer. Şifre tarayıcıda saklanmaz.
   function girisCiz(hata) {
-    const giris = el("input", { class: "kod-giris", placeholder: "Müşteri kodunuz", autocomplete: "off", autocapitalize: "characters", maxlength: "20", "aria-label": "Müşteri kodu" });
+    const kAd = el("input", { class: "giris-kutu", placeholder: "Kullanıcı adı", autocomplete: "username", autocapitalize: "none", spellcheck: "false", maxlength: "40", "aria-label": "Kullanıcı adı", name: "username" });
+    const kSifre = el("input", { class: "giris-kutu", type: "password", placeholder: "Şifre", autocomplete: "current-password", maxlength: "100", "aria-label": "Şifre", name: "password" });
+    const dugme = el("button", { class: "btn dolu", type: "submit" }, "Giriş");
     const istek = S.whatsapp
-      ? el("a", { href: "https://wa.me/" + S.whatsapp + "?text=" + encodeURIComponent("Merhaba, koleksiyon için müşteri kodu rica ediyorum."), target: "_blank", rel: "noopener" }, "Bizden isteyin")
+      ? el("a", { href: "https://wa.me/" + String(S.whatsapp).replace(/\D/g, "") + "?text=" + encodeURIComponent("Merhaba, müşteri girişi için kullanıcı adı ve şifre rica ediyorum."), target: "_blank", rel: "noopener" }, "Bizden isteyin")
       : el("a", { href: "#iletisim" }, "Bizden isteyin");
+    const hataP = el("p", { class: "hata" }, hata || ""); if (!hata) hataP.hidden = true;
     const form = el("form", { class: "portal-giris" },
-      el("h3", {}, "Koleksiyon müşterilerimize özeldir"),
-      el("p", {}, "Size verilen müşteri kodunuzla girin; modelleri ve size özel fiyatları görüp sipariş verebilirsiniz."),
-      el("div", { class: "kod-satir" }, giris, el("button", { class: "btn dolu", type: "submit" }, "Giriş")),
-      hata ? el("p", { class: "hata" }, hata) : null,
-      el("p", { class: "kucuk" }, "Kodunuz yok mu? ", istek));
-    form.onsubmit = (e) => { e.preventDefault(); const v = giris.value.trim().toUpperCase(); if (v) yukle(v); };
+      el("h3", {}, "Müşteri girişi"),
+      el("p", {}, "Kullanıcı adınız ve şifrenizle girin; modelleri, size özel fiyatları, siparişlerinizi ve hesabınızı görün."),
+      el("div", { class: "giris-alanlar" }, kAd, kSifre, dugme),
+      hataP,
+      el("p", { class: "kucuk" }, "Giriş bilginiz yok ya da şifrenizi mi unuttunuz? ", istek));
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const ad = kAd.value.trim(), sifre = kSifre.value;
+      if (!ad || !sifre) return;
+      dugme.disabled = true; dugme.textContent = "Giriş…"; hataP.hidden = true;
+      rpc("portal_giris", { p_kullanici: ad, p_sifre: sifre })
+        .then((anahtar) => { if (!anahtar) throw new Error("GECERSIZ_GIRIS"); yukle(anahtar); })
+        .catch((er) => {
+          const m = String((er && er.message) || er);
+          dugme.disabled = false; dugme.textContent = "Giriş"; kSifre.value = "";
+          hataP.textContent = /GECERSIZ_GIRIS/.test(m) ? "Kullanıcı adı ya da şifre hatalı." : /HESAP_KILITLI/.test(m) ? "Çok sayıda hatalı deneme: 15 dakika sonra tekrar deneyin." : "Bağlantı kurulamadı. Biraz sonra tekrar deneyin.";
+          hataP.hidden = false; kSifre.focus();
+        });
+    };
     alan.replaceChildren(form);
   }
 
@@ -146,7 +165,7 @@
       .catch((e) => { const m = hataMetni(e); if (m === HATA.GECERSIZ_KOD) { depo.yaz(""); kod = ""; } girisCiz(m); });
   }
 
-  function cikis() { depo.yaz(""); kod = ""; veri = null; sepet = []; hesap = null; sekme = "koleksiyon"; sepetGitYenile(); girisCiz(); }
+  function cikis() { if (kod) rpc("portal_cikis", { p_kod: kod }).catch(() => {}); depo.yaz(""); kod = ""; veri = null; sepet = []; hesap = null; sekme = "koleksiyon"; sepetGitYenile(); girisCiz(); }
 
   // ÜÇ SEKME (v1.648.0 — kullanıcı: "carinin de ekranı olsun, hesaplarını ve siparişlerini de kontrol edebileceği"):
   // Koleksiyon (sipariş verme) · Hesabım (bakiye, ekstre, çekler) · Siparişlerim. Hesap/sipariş verisi `portal_hesap()`
