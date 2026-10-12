@@ -141,6 +141,7 @@
     GECERSIZ_MIKTAR: T("hataMiktar"),
     BOS_SIPARIS: T("hataBos"),
     COK_KALEM: T("hataCokKalem"),
+    GECERSIZ_ODEME: T("hataOdeme"),
   };
   const hataMetni = (e) => { const m = String((e && e.message) || e); const k = Object.keys(HATA).find((x) => m.includes(x)); return k ? HATA[k] : T("hataBaglanti"); };
   const para = (n, pb) => { try { return new Intl.NumberFormat(window.DIL_BICIM || "tr-TR", { style: "currency", currency: pb || "TRY", maximumFractionDigits: 2 }).format(n); } catch (e) { return n + " " + (pb || ""); } };
@@ -363,8 +364,9 @@
           el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : "sari") }, t.durum === "reddedildi" ? T("kabulEdilmedi") : T("onayBekliyor"))),
         el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => el("div", { class: "talep-kalem" },
           minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, cAd(k.urunId, k.urunAd)), " · ", cRenk(k.renk)),
-          el("span", { class: "kucuk" }, k.miktar + " " + T("cift") + (k.tutar != null ? " · " + para(Number(k.tutar), k.paraBirimi) : ""))))),
-        (t.kalemler || []).some((k) => k.tutar != null) ? el("div", { class: "kucuk", style: "text-align:right" }, T("toplam") + " " + tutarToplami(t.kalemler)) : null,
+          el("span", { class: "kucuk" }, k.miktar + " " + T("cift") + (Number(k.tutar) > 0 ? " · " + para(Number(k.tutar), k.paraBirimi) : " · " + T("fiyatOnayda")))))),
+        t.odeme ? el("div", { class: "kucuk" }, T("odemeSekli") + ": " + ((T("odemeTip") || {})[t.odeme.tip] || t.odeme.tip) + (t.odeme.vadeGun ? " · " + t.odeme.vadeGun + " " + T("vadeGun").replace(/\s*\(.*\)/, "").toLowerCase() : "")) : null,
+        (t.kalemler || []).some((k) => Number(k.tutar) > 0) ? el("div", { class: "kucuk", style: "text-align:right" }, T("toplam") + " " + tutarToplami(t.kalemler)) : null,
         t.not ? el("div", { class: "kucuk" }, t.not) : null))) : null;
     const kartlar = sip.map((s) => {
       const top = (s.kalemler || []).reduce((a, k) => ({ m: a.m + Number(k.miktar || 0), t: a.t + Number(k.teslim || 0) }), { m: 0, t: 0 });
@@ -410,7 +412,8 @@
       el("div", { class: "urun-govde" },
         el("div", { class: "urun-ad" }, cAd(u.id, u.ad)),
         alt ? el("div", { class: "urun-alt" }, alt) : null,
-        el("div", { class: "fiyat" }, para(u.fiyat, u.para_birimi), el("span", {}, T("ciftBasi"))),
+        // FİYATSIZ MODEL (v1.652 — "fiyatları olmayan ürünler de listelensin … fiyat yokken de sipariş girişi olsun").
+        u.fiyat != null ? el("div", { class: "fiyat" }, para(u.fiyat, u.para_birimi), el("span", {}, T("ciftBasi"))) : el("div", { class: "fiyat onayda" }, T("fiyatOnayda")),
         rk,
         siparisGirisi(u, () => renk)));
   }
@@ -474,7 +477,8 @@
     if (!sepet.length) { kutu.append(el("h3", {}, T("sepet")), el("p", { class: "kucuk" }, T("sepetBos"))); return kutu; }
     const toplamCift = sepet.reduce((s, x) => s + x.miktar, 0);
     const toplamlar = {};
-    sepet.forEach((x) => { toplamlar[x.paraBirimi] = (toplamlar[x.paraBirimi] || 0) + x.miktar * x.birimFiyat; });
+    sepet.forEach((x) => { if (x.birimFiyat != null) toplamlar[x.paraBirimi] = (toplamlar[x.paraBirimi] || 0) + x.miktar * x.birimFiyat; });
+    const fiyatsizVar = sepet.some((x) => x.birimFiyat == null);
     // Satırlar model + renk altında toplanır: "Bot A · Siyah — 36×2  37×4".
     const gruplar = [];
     sepet.forEach((x) => {
@@ -487,22 +491,58 @@
       el("div", { style: "flex:1;min-width:0" }, el("b", {}, cAd(g.urunId, g.urunAd)), " · ", cRenk(g.renk),
         el("div", { class: "kucuk" }, bedenSirala(g.satirlar.map((s) => s.beden)).map((b) => b + "×" + g.satirlar.find((s) => s.beden === b).miktar).join("  "))),
       el("button", { type: "button", class: "bag", onclick: () => { sepet = sepet.filter((s) => !(s.urunId === g.urunId && s.renk === g.renk)); yenileSepet(); } }, T("kaldir")))));
+    // ÖDEME ŞEKLİ (v1.652 — "ödeme aşamasında nakit, çek… müşteri belirlesin"): ERP talepte görür, indirim/fiyatı ona göre verir.
+    // Yalnız ERP'de işaretli müşteriden istenir (`odemeSor`, portal()).
+    const odemeSor = !!(veri && veri.odemeSor);
+    const ODEMELER = ["Nakit", "Havale/EFT", "Kredi kartı", "Çek", "Senet", "Açık hesap"];
+    const odemeSec = el("select", { "aria-label": T("odemeSekli"), class: "odeme-sec" }, el("option", { value: "" }, T("odemeSec")), ...ODEMELER.map((o) => el("option", { value: o }, (T("odemeTip") || {})[o] || o)));
+    const vade = el("input", { type: "number", min: "0", max: "365", step: "1", inputmode: "numeric", placeholder: T("vadeGun"), class: "adet vade", "aria-label": T("vadeGun") });
+    const vadeKutu = el("label", { class: "kucuk vade-kutu", hidden: true }, T("vadeGun") + " ", vade);
+    odemeSec.onchange = () => { vadeKutu.hidden = !["Çek", "Senet", "Açık hesap"].includes(odemeSec.value); if (durum.className === "hata") { durum.className = "kucuk"; durum.textContent = ""; } };
     const not = el("textarea", { rows: "2", placeholder: T("notYer"), maxlength: "1000" });
     const durum = el("p", { class: "kucuk" });
     const gonder = el("button", { type: "button", class: "btn dolu", onclick: () => {
+      if (odemeSor && !odemeSec.value) { durum.className = "hata"; durum.textContent = T("hataOdeme"); odemeSec.focus(); return; }
+      const vg = parseInt(vade.value, 10);
+      const odeme = odemeSor ? { tip: odemeSec.value, ...(!vadeKutu.hidden && vg >= 0 ? { vadeGun: Math.min(365, vg) } : {}) } : null;
       gonder.disabled = true; durum.className = "kucuk"; durum.textContent = T("gonderiliyor");
-      rpc("portal_siparis", { p_kod: kod, p_kalemler: sepet.map((s) => ({ urunId: s.urunId, renk: s.renk, beden: s.beden, miktar: s.miktar })), p_not: not.value })
+      rpc("portal_siparis", { p_kod: kod, p_kalemler: sepet.map((s) => ({ urunId: s.urunId, renk: s.renk, beden: s.beden, miktar: s.miktar })), p_not: not.value, p_odeme: odeme })
         .then(() => { sepet = []; hesap = null; kutu.replaceWith(sepetCiz(true)); sepetGitYenile(); })
         .catch((e) => { gonder.disabled = false; durum.className = "hata"; durum.textContent = hataMetni(e); });
     } }, T("siparisiGonder"));
     kutu.append(
       el("h3", {}, T("sepet")), liste,
-      el("div", { class: "sepet-toplam" }, el("span", {}, toplamCift + " " + T("cift")), el("b", {}, Object.entries(toplamlar).map(([pb, t]) => para(t, pb)).join(" + "))),
+      el("div", { class: "sepet-toplam" }, el("span", {}, toplamCift + " " + T("cift")), el("b", {}, Object.entries(toplamlar).map(([pb, t]) => para(t, pb)).join(" + ") + (fiyatsizVar ? (Object.keys(toplamlar).length ? " + " : "") + T("fiyatOnayda") : ""))),
+      fiyatsizVar ? el("p", { class: "kucuk uyari" }, T("fiyatOnaydaUzun")) : null,
       el("p", { class: "kucuk" }, T("kesinTutar")),
+      odemeSor ? el("label", { class: "odeme-satiri" }, el("span", {}, T("odemeSekli")), odemeSec) : null, odemeSor ? vadeKutu : null,
       not, gonder, durum);
     return kutu;
   }
 
   if (kod) yukle(kod); else girisCiz();
   }
+})();
+
+// RESİM BÜYÜTME (kullanıcı: "sitede resme tıklayınca resim büyüsün"): koleksiyon kartı, sepet ve sipariş resimleri.
+// Tek dinleyici (olay yetkisi): kartlar yeniden çizilse de çalışır. Kapatma: arka plana / × / Esc.
+(function () {
+  let kutu = null;
+  function kapat() { if (kutu) { kutu.remove(); kutu = null; document.removeEventListener("keydown", tus); } }
+  function tus(e) { if (e.key === "Escape") kapat(); }
+  document.addEventListener("click", (e) => {
+    const img = e.target.closest && e.target.closest(".urun-resim img, .minik img");
+    if (!img || !img.src) return;
+    e.preventDefault();
+    kapat();
+    kutu = document.createElement("div");
+    kutu.className = "resim-buyuk";
+    const b = document.createElement("img"); b.src = img.src; b.alt = img.alt || "";
+    const x = document.createElement("button"); x.type = "button"; x.className = "resim-kapat"; x.setAttribute("aria-label", "×"); x.textContent = "×";
+    const ad = document.createElement("div"); ad.className = "resim-ad"; ad.textContent = img.alt || "";
+    kutu.append(b, x, ad);
+    kutu.onclick = (ev) => { if (ev.target !== b) kapat(); };
+    document.body.append(kutu);
+    document.addEventListener("keydown", tus);
+  });
 })();

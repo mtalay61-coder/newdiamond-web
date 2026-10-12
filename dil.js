@@ -55,6 +55,9 @@
       model: "Model", renk: "Renk", siparis: "Sipariş", teslim: "Teslim", kalan: "Kalan", fiyat: "Fiyat",
       kdvDahil: "KDV dahil toplam", odenen: "Ödenen (kapora)", siparisYok: "Henüz siparişiniz yok.", siparisleriniz: "Siparişleriniz",
       asortiDagilim: "Beden dağılımı", koliAsorti: (n, ad) => n + " koli " + ad,
+      fiyatOnayda: "Fiyat onayda", fiyatOnaydaUzun: "Fiyatı olmayan modellerin fiyatı sipariş onayında bildirilir.",
+      odemeSekli: "Ödeme şekli", odemeSec: "Ödeme şeklini seçin", vadeGun: "Vade (gün)", hataOdeme: "Ödeme şeklini seçin.",
+      odemeTip: { "Nakit": "Nakit", "Havale/EFT": "Havale / EFT", "Kredi kartı": "Kredi kartı", "Çek": "Çek", "Senet": "Senet", "Açık hesap": "Açık hesap (vadeli)" },
       // Çek durumları ERP'de Türkçe kayıtlı; görünen ad çevrilir.
       cekDurum: { "Portföyde": "Portföyde", "Ciro Edildi": "Ciro edildi", "Tahsilde": "Tahsilde", "Tahsil Edildi": "Tahsil edildi", "Karşılıksız": "Karşılıksız" },
     },
@@ -90,6 +93,9 @@
       model: "Model", renk: "Colour", siparis: "Ordered", teslim: "Delivered", kalan: "Remaining", fiyat: "Price",
       kdvDahil: "Total incl. VAT", odenen: "Paid (deposit)", siparisYok: "You have no orders yet.", siparisleriniz: "Your orders",
       asortiDagilim: "Size breakdown", koliAsorti: (n, ad) => n + " × " + ad,
+      fiyatOnayda: "Price on approval", fiyatOnaydaUzun: "Prices for models without a price are confirmed when the order is approved.",
+      odemeSekli: "Payment method", odemeSec: "Choose a payment method", vadeGun: "Term (days)", hataOdeme: "Please choose a payment method.",
+      odemeTip: { "Nakit": "Cash", "Havale/EFT": "Bank transfer", "Kredi kartı": "Credit card", "Çek": "Cheque", "Senet": "Promissory note", "Açık hesap": "Open account (on terms)" },
       cekDurum: { "Portföyde": "Held", "Ciro Edildi": "Endorsed", "Tahsilde": "In collection", "Tahsil Edildi": "Collected", "Karşılıksız": "Bounced" },
     },
     ru: {
@@ -124,6 +130,9 @@
       model: "Модель", renk: "Цвет", siparis: "Заказано", teslim: "Доставлено", kalan: "Осталось", fiyat: "Цена",
       kdvDahil: "Итого с НДС", odenen: "Оплачено (аванс)", siparisYok: "У вас пока нет заказов.", siparisleriniz: "Ваши заказы",
       asortiDagilim: "Размерная сетка", koliAsorti: (n, ad) => n + " × " + ad,
+      fiyatOnayda: "Цена при подтверждении", fiyatOnaydaUzun: "Цены моделей без цены сообщаются при подтверждении заказа.",
+      odemeSekli: "Способ оплаты", odemeSec: "Выберите способ оплаты", vadeGun: "Отсрочка (дней)", hataOdeme: "Выберите способ оплаты.",
+      odemeTip: { "Nakit": "Наличные", "Havale/EFT": "Банковский перевод", "Kredi kartı": "Кредитная карта", "Çek": "Чек", "Senet": "Вексель", "Açık hesap": "Отсрочка платежа" },
       cekDurum: { "Portföyde": "В портфеле", "Ciro Edildi": "Индоссирован", "Tahsilde": "На инкассо", "Tahsil Edildi": "Оплачен", "Karşılıksız": "Не оплачен" },
     },
   };

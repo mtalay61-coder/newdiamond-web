@@ -215,3 +215,16 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .sip-tablo td { white-space: normal; }
 .sip-tablo .model-hucre { align-items: flex-start; }
 .sip-tablo th { white-space: normal; overflow: visible; }
+/* Fiyatsız model + ödeme şekli (v1.652) */
+.fiyat.onayda { font-size: 14px; font-weight: 700; color: #9A6412; }
+.kucuk.uyari { color: #9A6412; }
+.odeme-satiri { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.odeme-sec { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--cizgi); border-radius: 10px; background: var(--zemin); color: var(--yazi); }
+.vade-kutu { display: flex; align-items: center; gap: 8px; }
+.vade-kutu[hidden] { display: none; }
+/* Resim büyütme */
+.urun-resim img, .minik img { cursor: zoom-in; }
+.resim-buyuk { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.82); display: grid; place-items: center; padding: 24px; }
+.resim-buyuk img { max-width: min(1100px, 100%); max-height: calc(100vh - 80px); object-fit: contain; border-radius: 10px; background: #fff; }
+.resim-kapat { position: absolute; top: 14px; right: 18px; width: 40px; height: 40px; border-radius: 999px; border: 0; background: rgba(255,255,255,.9); font-size: 26px; line-height: 1; cursor: pointer; }
+.resim-ad { position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; color: #fff; font-weight: 700; }
