@@ -161,6 +161,13 @@
 
   function bilgi(metin) { alan.replaceChildren(el("div", { class: "bilgi" }, metin)); }
 
+  // KAYIT ADLARININ ÇEVİRİSİ (ERP v1.651.0 — "stok, renk, beden vs. de dil değişimi"): model adı (ürünün kendi
+  // çevirisi), renk / mamul tipi / asorti (Tanımlar sözlüğü). Yalnız GÖSTERİM: sepet ve sipariş Türkçe adla gider
+  // (ERP kaydı o). Çeviri yoksa Türkçe.
+  const cAd = (urunId, ad) => { const c = veri && veri.urunCevirileri && veri.urunCevirileri[urunId]; return (DIL !== "tr" && c && c[DIL] && c[DIL].ad) || ad || ""; };
+  const cSoz = (tur, ad) => { const c = veri && veri.ceviriler && veri.ceviriler[tur] && veri.ceviriler[tur][ad]; return (DIL !== "tr" && c && c[DIL]) || ad || ""; };
+  const cRenk = (r) => cSoz("renk", r), cTip = (t) => cSoz("tip", t), cAsorti = (a) => cSoz("asorti", a);
+
   // KULLANICI ADI + ŞİFRE (v1.649.0 — kullanıcı: "müşteri giriş yaparken kullanıcı adı ve şifre ile girsin").
   // `portal_giris` doğruysa 30 günlük oturum anahtarı döner (yanlışsa boş); anahtar `kod` olarak saklanır ve bütün
   // çağrılara geçer. Şifre tarayıcıda saklanmaz.
@@ -239,7 +246,7 @@
     const modeller = veri.modeller || [];
     const tipler = Array.from(new Set(modeller.map((u) => u.tip).filter(Boolean)));
     const suzgec = el("div", { class: "suzgec" });
-    if (tipler.length > 1) ["__tumu", ...tipler].forEach((t) => suzgec.append(el("button", { type: "button", class: t === secili ? "etkin" : "", onclick: () => { secili = t; ciz(); } }, t === "__tumu" ? T("tumu") : t)));
+    if (tipler.length > 1) ["__tumu", ...tipler].forEach((t) => suzgec.append(el("button", { type: "button", class: t === secili ? "etkin" : "", onclick: () => { secili = t; ciz(); } }, t === "__tumu" ? T("tumu") : cTip(t))));
     const izgara = el("div", { class: "izgara" });
     const gorunen = modeller.filter((u) => secili === "__tumu" || u.tip === secili);
     if (!gorunen.length) izgara.append(el("div", { class: "bilgi", style: "grid-column:1/-1" }, T("modelYok")));
@@ -343,7 +350,7 @@
     if (!sirali.length || (sirali.length === 1 && sirali[0] === "")) return null;
     const as = asortiBul(b);
     return el("div", { class: "dagilim" },
-      as ? el("span", { class: "asorti-rozet" }, T("koliAsorti")(as.kat, as.ad)) : null,
+      as ? el("span", { class: "asorti-rozet" }, T("koliAsorti")(as.kat, cAsorti(as.ad))) : null,
       ...sirali.map((x) => el("span", { class: "beden-cip" }, el("i", {}, x), String(b[x]))));
   }
 
@@ -355,7 +362,7 @@
         el("div", { class: "sip-bas" }, el("b", {}, tarihTR(String(t.tarih).slice(0, 10))), el("span", {}, t.toplamCift + " " + T("cift")),
           el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : "sari") }, t.durum === "reddedildi" ? T("kabulEdilmedi") : T("onayBekliyor"))),
         el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => el("div", { class: "talep-kalem" },
-          minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, k.urunAd || ""), " · ", k.renk || ""),
+          minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, cAd(k.urunId, k.urunAd)), " · ", cRenk(k.renk)),
           el("span", { class: "kucuk" }, k.miktar + " " + T("cift") + (k.tutar != null ? " · " + para(Number(k.tutar), k.paraBirimi) : ""))))),
         (t.kalemler || []).some((k) => k.tutar != null) ? el("div", { class: "kucuk", style: "text-align:right" }, T("toplam") + " " + tutarToplami(t.kalemler)) : null,
         t.not ? el("div", { class: "kucuk" }, t.not) : null))) : null;
@@ -373,7 +380,7 @@
           el("colgroup", {}, ...[30, 16, 9, 9, 9, 12, 15].map((w) => el("col", { style: "width:" + w + "%" }))),
           el("thead", {}, el("tr", {}, ...[T("model"), T("renk"), T("siparis"), T("teslim"), T("kalan"), T("fiyat"), T("tutar")].map((b, i) => el("th", { class: i >= 2 ? "sayi" : "" }, b)))),
           el("tbody", {}, ...(s.kalemler || []).map((k) => el("tr", {},
-            el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), el("span", {}, k.urunAd || "", dagilim(k)))), el("td", {}, k.renk || ""), el("td", { class: "sayi" }, String(k.miktar)),
+            el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), el("span", {}, cAd(k.urunId, k.urunAd), dagilim(k)))), el("td", {}, cRenk(k.renk)), el("td", { class: "sayi" }, String(k.miktar)),
             el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim))),
             // Fiyat + tutar (kullanıcı: "sipariş fiyat ve tutar da görünsün"). Beden fiyatları farklıysa fiyat ortalamadır.
             el("td", { class: "sayi" }, k.fiyat != null ? para(Number(k.fiyat), k.paraBirimi) : ""),
@@ -392,16 +399,16 @@
     const tumRenkler = renkler.length ? renkler : (u.renkler || []);
     let renk = tumRenkler[0] || "";
     const resimKutu = el("div", { class: "urun-resim" });
-    const goster = (src) => resimKutu.replaceChildren(src ? el("img", { src, alt: u.ad, loading: "lazy" }) : el("span", { class: "yok" }, T("gorselYakinda")));
+    const goster = (src) => resimKutu.replaceChildren(src ? el("img", { src, alt: cAd(u.id, u.ad), loading: "lazy" }) : el("span", { class: "yok" }, T("gorselYakinda")));
     goster(resimler[renk] || u.kapak_resmi);
     const rk = el("div", { class: "renkler" });
     tumRenkler.forEach((r) => rk.append(el("button", { type: "button", class: "renk" + (r === renk ? " etkin" : ""), onclick: (e) => {
       renk = r; rk.querySelectorAll(".renk").forEach((x) => x.classList.toggle("etkin", x === e.currentTarget)); goster(resimler[r] || u.kapak_resmi);
-    } }, r)));
-    const alt = [u.tip, [u.sezon, u.sezon_yili].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+    } }, cRenk(r))));
+    const alt = [cTip(u.tip), [u.sezon, u.sezon_yili].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
     return el("article", { class: "urun" }, resimKutu,
       el("div", { class: "urun-govde" },
-        el("div", { class: "urun-ad" }, u.ad),
+        el("div", { class: "urun-ad" }, cAd(u.id, u.ad)),
         alt ? el("div", { class: "urun-alt" }, alt) : null,
         el("div", { class: "fiyat" }, para(u.fiyat, u.para_birimi), el("span", {}, T("ciftBasi"))),
         rk,
@@ -422,7 +429,7 @@
       const sekmeler = asortiler.length ? el("div", { class: "kip" }, sekme("asorti", T("asorti")), sekme("beden", T("bedenBeden"))) : null;
       let govde, topla;
       if (kip === "asorti") {
-        const sec = el("select", { "aria-label": T("asorti") }, ...asortiler.map((a) => el("option", { value: a.id }, a.ad + " (" + a.oranlar.map((o) => o.beden + "×" + o.oran).join(" ") + ")")));
+        const sec = el("select", { "aria-label": T("asorti") }, ...asortiler.map((a) => el("option", { value: a.id }, cAsorti(a.ad) + " (" + a.oranlar.map((o) => o.beden + "×" + o.oran).join(" ") + ")")));
         const koli = el("input", { type: "number", min: "1", step: "1", value: "1", class: "adet", inputmode: "numeric", "aria-label": T("koliAdedi") });
         govde = el("div", { class: "satir" }, sec, koli, el("span", { class: "kucuk" }, T("koli")));
         topla = () => {
@@ -477,7 +484,7 @@
     });
     const liste = el("div", { class: "sepet-liste" }, ...gruplar.map((g) => el("div", { class: "sepet-satir" },
       (() => { const u = ((veri && veri.modeller) || []).find((m) => m.id === g.urunId); return minik(u ? ((u.renk_resimleri || {})[g.renk] || u.kapak_resmi) : "", g.urunAd); })(),
-      el("div", { style: "flex:1;min-width:0" }, el("b", {}, g.urunAd), " · ", g.renk,
+      el("div", { style: "flex:1;min-width:0" }, el("b", {}, cAd(g.urunId, g.urunAd)), " · ", cRenk(g.renk),
         el("div", { class: "kucuk" }, bedenSirala(g.satirlar.map((s) => s.beden)).map((b) => b + "×" + g.satirlar.find((s) => s.beden === b).miktar).join("  "))),
       el("button", { type: "button", class: "bag", onclick: () => { sepet = sepet.filter((s) => !(s.urunId === g.urunId && s.renk === g.renk)); yenileSepet(); } }, T("kaldir")))));
     const not = el("textarea", { rows: "2", placeholder: T("notYer"), maxlength: "1000" });
