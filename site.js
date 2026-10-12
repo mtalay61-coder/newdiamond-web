@@ -1,4 +1,4 @@
-// SİTE — ortak davranışlar: iletişim bilgilerini ayarlardan doldurma ve canlı koleksiyon.
+// SİTE — ortak davranışlar: iletişim bilgilerini ayarlardan doldurma ve MÜŞTERİ PORTALI (koleksiyon + sipariş).
 (function () {
   const S = window.SITE || {};
   const doldurulmus = (v) => v && !/^\[.*\]$/.test(v);
@@ -25,70 +25,203 @@
   const yil = document.querySelector("[data-yil]");
   if (yil) yil.textContent = new Date().getFullYear();
 
-  // ---- CANLI KOLEKSİYON ----
-  // Kaynak: Supabase `vitrin()` (vitrin.sql). Ağ yoksa ya da fonksiyon kurulmamışsa bölüm sade bir bilgi yazar; site bozulmaz.
-  const izgara = document.querySelector("[data-koleksiyon]");
-  if (!izgara) return;
-  const suzgec = document.querySelector("[data-koleksiyon-suzgec]");
-  const durum = (metin) => { izgara.innerHTML = '<div class="bilgi" style="grid-column:1/-1"></div>'; izgara.firstChild.textContent = metin; };
-  durum("Koleksiyon yükleniyor…");
-
-  fetch(S.supabaseUrl.replace(/\/$/, "") + "/rest/v1/rpc/vitrin", {
+  // ================= MÜŞTERİ PORTALI =================
+  // Koleksiyon herkese açık DEĞİL: müşteri, firmanın ERP'de cari kartından verdiği kodla girer. Sunucu (`portal()`,
+  // site-portal.sql) yalnız o müşteriye görünür modelleri ve ONA ÖZEL fiyatları döndürür; sipariş `portal_siparis()` ile
+  // TALEP olarak ERP'ye düşer, firma onaylayınca siparişe çevrilir. Fiyatı sunucu yeniden bulur — buradaki gösterim içindir.
+  const alan = document.querySelector("[data-portal]");
+  if (!alan) return;
+  const KOD_ANAHTARI = "nd-portal-kod";
+  const depo = {
+    al() { try { return localStorage.getItem(KOD_ANAHTARI) || ""; } catch (e) { return ""; } },
+    yaz(v) { try { if (v) localStorage.setItem(KOD_ANAHTARI, v); else localStorage.removeItem(KOD_ANAHTARI); } catch (e) { /* gizli pencere */ } },
+  };
+  const rpc = (ad, govde) => fetch(S.supabaseUrl.replace(/\/$/, "") + "/rest/v1/rpc/" + ad, {
     method: "POST",
     headers: { apikey: S.supabaseAnahtar, Authorization: "Bearer " + S.supabaseAnahtar, "Content-Type": "application/json" },
-    body: "{}",
-  })
-    .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then((urunler) => {
-      if (!Array.isArray(urunler) || urunler.length === 0) { durum("Koleksiyon yakında burada."); return; }
-      const tipler = Array.from(new Set(urunler.map((u) => u.tip).filter(Boolean)));
-      let secili = "Tümü";
-      const ciz = () => {
-        izgara.innerHTML = "";
-        urunler.filter((u) => secili === "Tümü" || u.tip === secili).forEach((u) => izgara.appendChild(urunKarti(u)));
-      };
-      if (suzgec && tipler.length > 1) {
-        ["Tümü", ...tipler].forEach((t) => {
-          const b = document.createElement("button");
-          b.type = "button"; b.textContent = t; if (t === secili) b.className = "etkin";
-          b.onclick = () => { secili = t; suzgec.querySelectorAll("button").forEach((x) => x.classList.toggle("etkin", x === b)); ciz(); };
-          suzgec.appendChild(b);
-        });
-      }
-      ciz();
-    })
-    .catch(() => durum("Koleksiyon şu an yüklenemedi. Bilgi için bize ulaşın."));
+    body: JSON.stringify(govde),
+  }).then(async (r) => {
+    const metin = await r.text();
+    let veri = null; try { veri = metin ? JSON.parse(metin) : null; } catch (e) { /* düz metin */ }
+    if (!r.ok) throw new Error((veri && veri.message) || metin || ("HTTP " + r.status));
+    return veri;
+  });
+  const HATA = {
+    GECERSIZ_KOD: "Kod geçersiz ya da erişiminiz kapatılmış.",
+    GUNLUK_SINIR: "Bugün için sipariş sınırına ulaştınız; lütfen bizi arayın.",
+    GECERSIZ_MODEL: "Sepetteki bir model artık listenizde değil. Sayfayı yenileyip tekrar deneyin.",
+    GECERSIZ_RENK_BEDEN: "Sepetteki bir renk/beden artık yok. Sayfayı yenileyip tekrar deneyin.",
+    GECERSIZ_MIKTAR: "Adetler 1 ile 5000 arasında tam sayı olmalı.",
+    BOS_SIPARIS: "Sepet boş.",
+    COK_KALEM: "Sepette çok fazla satır var; siparişi ikiye bölün.",
+  };
+  const hataMetni = (e) => { const m = String((e && e.message) || e); const k = Object.keys(HATA).find((x) => m.includes(x)); return k ? HATA[k] : "Bağlantı kurulamadı. Biraz sonra tekrar deneyin."; };
+  const para = (n, pb) => { try { return new Intl.NumberFormat("tr-TR", { style: "currency", currency: pb || "TRY", maximumFractionDigits: 2 }).format(n); } catch (e) { return n + " " + (pb || ""); } };
+  // Küçük DOM yardımcısı: metinler daima textContent ile girer (ERP'den gelen ad/renk HTML olarak yorumlanmaz).
+  const el = (etiket, ozellik, ...cocuklar) => {
+    const d = document.createElement(etiket);
+    Object.entries(ozellik || {}).forEach(([k, v]) => {
+      if (k === "class") d.className = v; else if (k.startsWith("on")) d[k] = v; else if (v != null && v !== false) d.setAttribute(k, v === true ? "" : v);
+    });
+    cocuklar.flat().forEach((c) => { if (c != null && c !== false) d.append(c.nodeType ? c : String(c)); });
+    return d;
+  };
 
-  // Kart: ilk renk resmi (yoksa kapak); renk düğmesine dokununca o rengin resmi. Fiyat yok — vitrin fonksiyonu fiyat döndürmez.
+  let kod = depo.al();
+  let veri = null;          // { unvan, asortiler, modeller }
+  let sepet = [];           // [{urunId, urunAd, renk, beden, miktar, birimFiyat, paraBirimi}]
+  let secili = "Tümü";
+
+  function bilgi(metin) { alan.replaceChildren(el("div", { class: "bilgi" }, metin)); }
+
+  function girisCiz(hata) {
+    const giris = el("input", { class: "kod-giris", placeholder: "Müşteri kodunuz", autocomplete: "off", autocapitalize: "characters", maxlength: "20", "aria-label": "Müşteri kodu" });
+    const istek = S.whatsapp
+      ? el("a", { href: "https://wa.me/" + S.whatsapp + "?text=" + encodeURIComponent("Merhaba, koleksiyon için müşteri kodu rica ediyorum."), target: "_blank", rel: "noopener" }, "Bizden isteyin")
+      : el("a", { href: "#iletisim" }, "Bizden isteyin");
+    const form = el("form", { class: "portal-giris" },
+      el("h3", {}, "Koleksiyon müşterilerimize özeldir"),
+      el("p", {}, "Size verilen müşteri kodunuzla girin; modelleri ve size özel fiyatları görüp sipariş verebilirsiniz."),
+      el("div", { class: "kod-satir" }, giris, el("button", { class: "btn dolu", type: "submit" }, "Giriş")),
+      hata ? el("p", { class: "hata" }, hata) : null,
+      el("p", { class: "kucuk" }, "Kodunuz yok mu? ", istek));
+    form.onsubmit = (e) => { e.preventDefault(); const v = giris.value.trim().toUpperCase(); if (v) yukle(v); };
+    alan.replaceChildren(form);
+  }
+
+  function yukle(yeniKod) {
+    bilgi("Koleksiyon yükleniyor…");
+    rpc("portal", { p_kod: yeniKod })
+      .then((v) => { kod = yeniKod; depo.yaz(kod); veri = v || { modeller: [], asortiler: [] }; ciz(); })
+      .catch((e) => { const m = hataMetni(e); if (m === HATA.GECERSIZ_KOD) { depo.yaz(""); kod = ""; } girisCiz(m); });
+  }
+
+  function cikis() { depo.yaz(""); kod = ""; veri = null; sepet = []; sepetGitYenile(); girisCiz(); }
+
+  function ciz() {
+    const modeller = veri.modeller || [];
+    const tipler = Array.from(new Set(modeller.map((u) => u.tip).filter(Boolean)));
+    const ust = el("div", { class: "portal-ust" },
+      el("span", {}, "Hoş geldiniz, ", el("b", {}, veri.unvan || "")),
+      el("button", { class: "bag", type: "button", onclick: cikis }, "Çıkış"));
+    const suzgec = el("div", { class: "suzgec" });
+    if (tipler.length > 1) ["Tümü", ...tipler].forEach((t) => suzgec.append(el("button", { type: "button", class: t === secili ? "etkin" : "", onclick: () => { secili = t; ciz(); } }, t)));
+    const izgara = el("div", { class: "izgara" });
+    const gorunen = modeller.filter((u) => secili === "Tümü" || u.tip === secili);
+    if (!gorunen.length) izgara.append(el("div", { class: "bilgi", style: "grid-column:1/-1" }, "Size tanımlı model henüz yok. Bilgi için bize ulaşın."));
+    gorunen.forEach((u) => izgara.append(urunKarti(u)));
+    alan.replaceChildren(ust, suzgec, el("div", { class: "portal-govde" }, izgara, sepetCiz()));
+  }
+
+  // Kart: renk düğmesi o rengin resmini açar ve siparişin rengini seçer; altta sipariş girişi.
   function urunKarti(u) {
     const resimler = u.renk_resimleri || {};
-    const renkler = (u.renkler && u.renkler.length ? u.renkler : Object.keys(resimler)).filter((r) => r && r !== "Standart");
-    const ilkResim = () => (renkler.map((r) => resimler[r]).find(Boolean)) || u.kapak_resmi || "";
-    const kart = document.createElement("article");
-    kart.className = "urun";
-    const resimKutu = document.createElement("div");
-    resimKutu.className = "urun-resim";
-    const img = document.createElement("img");
-    img.loading = "lazy"; img.alt = u.ad;
-    const goster = (src) => { if (src) { img.src = src; resimKutu.replaceChildren(img); } else { resimKutu.innerHTML = '<span class="yok">Görsel yakında</span>'; } };
-    goster(ilkResim());
-    const govde = document.createElement("div");
-    govde.className = "urun-govde";
-    const ad = document.createElement("div"); ad.className = "urun-ad"; ad.textContent = u.ad;
-    govde.appendChild(ad);
+    const renkler = (u.renkler || []).filter((r) => r && r !== "Standart");
+    const tumRenkler = renkler.length ? renkler : (u.renkler || []);
+    let renk = tumRenkler[0] || "";
+    const resimKutu = el("div", { class: "urun-resim" });
+    const goster = (src) => resimKutu.replaceChildren(src ? el("img", { src, alt: u.ad, loading: "lazy" }) : el("span", { class: "yok" }, "Görsel yakında"));
+    goster(resimler[renk] || u.kapak_resmi);
+    const rk = el("div", { class: "renkler" });
+    tumRenkler.forEach((r) => rk.append(el("button", { type: "button", class: "renk" + (r === renk ? " etkin" : ""), onclick: (e) => {
+      renk = r; rk.querySelectorAll(".renk").forEach((x) => x.classList.toggle("etkin", x === e.currentTarget)); goster(resimler[r] || u.kapak_resmi);
+    } }, r)));
     const alt = [u.tip, [u.sezon, u.sezon_yili].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
-    if (alt) { const a = document.createElement("div"); a.className = "urun-alt"; a.textContent = alt; govde.appendChild(a); }
-    if (renkler.length) {
-      const rk = document.createElement("div"); rk.className = "renkler";
-      renkler.forEach((r, i) => {
-        const b = document.createElement("button");
-        b.type = "button"; b.className = "renk" + (i === 0 ? " etkin" : ""); b.textContent = r;
-        b.onclick = () => { rk.querySelectorAll(".renk").forEach((x) => x.classList.toggle("etkin", x === b)); goster(resimler[r] || u.kapak_resmi); };
-        rk.appendChild(b);
-      });
-      govde.appendChild(rk);
-    }
-    kart.append(resimKutu, govde);
-    return kart;
+    return el("article", { class: "urun" }, resimKutu,
+      el("div", { class: "urun-govde" },
+        el("div", { class: "urun-ad" }, u.ad),
+        alt ? el("div", { class: "urun-alt" }, alt) : null,
+        el("div", { class: "fiyat" }, para(u.fiyat, u.para_birimi), el("span", {}, " / çift")),
+        rk,
+        siparisGirisi(u, () => renk)));
   }
+
+  function bedenSirala(b) { return b.slice().sort((x, y) => (parseFloat(x) - parseFloat(y)) || String(x).localeCompare(String(y), "tr")); }
+
+  // İki giriş yolu (kullanıcı kararı: "ikisi de"): asorti × koli adedi ya da beden beden çift.
+  function siparisGirisi(u, renkAl) {
+    const bedenler = bedenSirala((u.bedenler || []).map(String));
+    // Yalnız bütün bedenleri bu modelde olan asortiler: olmayan beden sessizce düşse müşteri eksik koli sipariş ederdi.
+    const asortiler = (veri.asortiler || []).filter((a) => (a.oranlar || []).length && a.oranlar.every((o) => bedenler.includes(String(o.beden))));
+    let kip = asortiler.length ? "asorti" : "beden";
+    const kutu = el("div", { class: "siparis-giris" });
+    const yeniden = () => {
+      const sekme = (k, ad) => el("button", { type: "button", class: kip === k ? "etkin" : "", onclick: () => { kip = k; yeniden(); } }, ad);
+      const sekmeler = asortiler.length ? el("div", { class: "kip" }, sekme("asorti", "Asorti"), sekme("beden", "Beden beden")) : null;
+      let govde, topla;
+      if (kip === "asorti") {
+        const sec = el("select", { "aria-label": "Asorti" }, ...asortiler.map((a) => el("option", { value: a.id }, a.ad + " (" + a.oranlar.map((o) => o.beden + "×" + o.oran).join(" ") + ")")));
+        const koli = el("input", { type: "number", min: "1", step: "1", value: "1", class: "adet", inputmode: "numeric", "aria-label": "Koli adedi" });
+        govde = el("div", { class: "satir" }, sec, koli, el("span", { class: "kucuk" }, "koli"));
+        topla = () => {
+          const a = asortiler.find((x) => x.id === sec.value); const n = parseInt(koli.value, 10);
+          if (!a || !(n > 0)) return [];
+          return a.oranlar.map((o) => ({ beden: String(o.beden), miktar: Math.round(o.oran * n) })).filter((x) => x.miktar > 0);
+        };
+      } else {
+        const kutular = bedenler.map((b) => ({ b, g: el("input", { type: "number", min: "0", step: "1", placeholder: "0", class: "adet", inputmode: "numeric", "aria-label": "Beden " + b }) }));
+        govde = el("div", { class: "bedenler" }, ...kutular.map((x) => el("label", {}, el("span", {}, x.b), x.g)));
+        topla = () => kutular.map((x) => ({ beden: x.b, miktar: parseInt(x.g.value, 10) || 0 })).filter((x) => x.miktar > 0);
+      }
+      const ekle = el("button", { type: "button", class: "btn dolu kucuk-btn", onclick: () => {
+        const renk = renkAl(); const satirlar = topla();
+        if (!renk) return;
+        if (!satirlar.length) { ekle.textContent = "Adet girin"; setTimeout(() => { ekle.textContent = "Sepete ekle"; }, 1400); return; }
+        satirlar.forEach((s) => {
+          const varolan = sepet.find((x) => x.urunId === u.id && x.renk === renk && x.beden === s.beden);
+          if (varolan) varolan.miktar += s.miktar;
+          else sepet.push({ urunId: u.id, urunAd: u.ad, renk, beden: s.beden, miktar: s.miktar, birimFiyat: u.fiyat, paraBirimi: u.para_birimi });
+        });
+        yenileSepet();
+        ekle.textContent = "Eklendi ✓"; setTimeout(() => { ekle.textContent = "Sepete ekle"; }, 1200);
+      } }, "Sepete ekle");
+      kutu.replaceChildren(...[sekmeler, govde, ekle].filter(Boolean));
+    };
+    yeniden();
+    return kutu;
+  }
+
+  let sepetKutu = null;
+  // Telefonda sepet modellerin altında kalıyor: dolu sepet için solda sabit "Sepet (n çift)" kısayolu.
+  const sepetGit = el("a", { class: "sepet-git", href: "#sepet", hidden: true });
+  document.body.append(sepetGit);
+  function sepetGitYenile() { const n = sepet.reduce((s, x) => s + x.miktar, 0); sepetGit.hidden = !n; sepetGit.textContent = "Sepet · " + n + " çift"; }
+  function yenileSepet() { if (sepetKutu) sepetKutu.replaceWith(sepetCiz()); sepetGitYenile(); }
+
+  function sepetCiz(tesekkur) {
+    const kutu = el("aside", { class: "sepet", id: "sepet" });
+    sepetKutu = kutu;
+    if (tesekkur) kutu.append(el("p", { class: "tamam" }, "Siparişiniz alındı, teşekkürler. Kontrol edip size dönüş yapacağız."));
+    if (!sepet.length) { kutu.append(el("h3", {}, "Sepet"), el("p", { class: "kucuk" }, "Modelde renk seçip adet girin, sepete ekleyin.")); return kutu; }
+    const toplamCift = sepet.reduce((s, x) => s + x.miktar, 0);
+    const toplamlar = {};
+    sepet.forEach((x) => { toplamlar[x.paraBirimi] = (toplamlar[x.paraBirimi] || 0) + x.miktar * x.birimFiyat; });
+    // Satırlar model + renk altında toplanır: "Bot A · Siyah — 36×2  37×4".
+    const gruplar = [];
+    sepet.forEach((x) => {
+      let g = gruplar.find((y) => y.urunId === x.urunId && y.renk === x.renk);
+      if (!g) { g = { urunId: x.urunId, urunAd: x.urunAd, renk: x.renk, satirlar: [] }; gruplar.push(g); }
+      g.satirlar.push(x);
+    });
+    const liste = el("div", { class: "sepet-liste" }, ...gruplar.map((g) => el("div", { class: "sepet-satir" },
+      el("div", {}, el("b", {}, g.urunAd), " · ", g.renk,
+        el("div", { class: "kucuk" }, bedenSirala(g.satirlar.map((s) => s.beden)).map((b) => b + "×" + g.satirlar.find((s) => s.beden === b).miktar).join("  "))),
+      el("button", { type: "button", class: "bag", onclick: () => { sepet = sepet.filter((s) => !(s.urunId === g.urunId && s.renk === g.renk)); yenileSepet(); } }, "Kaldır"))));
+    const not = el("textarea", { rows: "2", placeholder: "Not (teslim tarihi, kutu, etiket…)", maxlength: "1000" });
+    const durum = el("p", { class: "kucuk" });
+    const gonder = el("button", { type: "button", class: "btn dolu", onclick: () => {
+      gonder.disabled = true; durum.className = "kucuk"; durum.textContent = "Gönderiliyor…";
+      rpc("portal_siparis", { p_kod: kod, p_kalemler: sepet.map((s) => ({ urunId: s.urunId, renk: s.renk, beden: s.beden, miktar: s.miktar })), p_not: not.value })
+        .then(() => { sepet = []; kutu.replaceWith(sepetCiz(true)); sepetGitYenile(); })
+        .catch((e) => { gonder.disabled = false; durum.className = "hata"; durum.textContent = hataMetni(e); });
+    } }, "Siparişi gönder");
+    kutu.append(
+      el("h3", {}, "Sepet"), liste,
+      el("div", { class: "sepet-toplam" }, el("span", {}, toplamCift + " çift"), el("b", {}, Object.entries(toplamlar).map(([pb, t]) => para(t, pb)).join(" + "))),
+      el("p", { class: "kucuk" }, "Kesin tutar ve teslim tarihi sipariş onayında bildirilir."),
+      not, gonder, durum);
+    return kutu;
+  }
+
+  if (kod) yukle(kod); else girisCiz();
 })();

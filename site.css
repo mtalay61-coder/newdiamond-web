@@ -89,3 +89,46 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 
 /* WhatsApp düğmesi */
 .wa { position: fixed; right: 18px; bottom: 18px; z-index: 20; background: #1F9D55; color: #fff; text-decoration: none; font-weight: 700; padding: 12px 16px; border-radius: 999px; box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+
+/* Müşteri portalı */
+.portal-giris { max-width: 520px; background: var(--kart); border: 1px solid var(--cizgi); border-radius: var(--r); padding: 24px; }
+.portal-giris h3 { margin: 0 0 6px; }
+.portal-giris p { margin: 0 0 14px; color: var(--yazi-2); }
+.kod-satir { display: flex; gap: 8px; margin-bottom: 10px; }
+.kod-giris { flex: 1; min-width: 0; font: inherit; font-size: 17px; letter-spacing: .12em; text-transform: uppercase; padding: 11px 14px; border: 1.5px solid var(--cizgi); border-radius: 999px; background: var(--zemin); color: var(--yazi); }
+.kod-giris:focus { outline: none; border-color: var(--vurgu); }
+.hata { color: #B3261E !important; font-weight: 600; }
+.tamam { color: #1F7A3E; font-weight: 600; background: color-mix(in srgb, #1F7A3E 10%, transparent); padding: 10px 12px; border-radius: 10px; }
+.kucuk { font-size: 13px; color: var(--yazi-3); }
+.portal-giris .kucuk a, .bag { color: var(--vurgu); font-weight: 700; }
+.bag { background: none; border: 0; font: inherit; font-size: 14px; cursor: pointer; padding: 4px 6px; }
+.portal-ust { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; color: var(--yazi-2); }
+.portal-ust + .suzgec { margin-bottom: 16px; }
+.portal-govde { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .portal-govde { grid-template-columns: 1fr; } }
+.fiyat { font-weight: 800; font-size: 18px; color: var(--vurgu-koyu); }
+.fiyat span { font-weight: 500; font-size: 13px; color: var(--yazi-3); }
+.siparis-giris { border-top: 1px solid var(--cizgi); margin-top: 6px; padding-top: 10px; display: grid; gap: 8px; }
+.kip { display: flex; gap: 4px; }
+.kip button { flex: 1; border: 1px solid var(--cizgi); background: transparent; color: var(--yazi-2); font: inherit; font-size: 12px; font-weight: 600; padding: 5px; border-radius: 8px; cursor: pointer; }
+.kip button.etkin { background: var(--yazi); color: var(--zemin); border-color: var(--yazi); }
+.siparis-giris .satir { display: flex; gap: 6px; align-items: center; }
+.siparis-giris select { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 7px; border: 1px solid var(--cizgi); border-radius: 8px; background: var(--zemin); color: var(--yazi); }
+.adet { width: 64px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--cizgi); border-radius: 8px; background: var(--zemin); color: var(--yazi); }
+.bedenler { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.bedenler label { display: grid; gap: 2px; text-align: center; font-size: 12px; color: var(--yazi-3); }
+.bedenler .adet { width: 100%; text-align: center; padding: 6px 2px; }
+.kucuk-btn { padding: 8px 14px; font-size: 14px; justify-content: center; cursor: pointer; }
+.sepet { position: sticky; top: 80px; background: var(--kart); border: 1px solid var(--cizgi); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; }
+.sepet h3 { margin: 0; }
+.sepet p { margin: 0; }
+.sepet-liste { display: grid; gap: 8px; max-height: 340px; overflow: auto; }
+.sepet-satir { display: flex; justify-content: space-between; gap: 8px; align-items: start; font-size: 14px; border-bottom: 1px dashed var(--cizgi); padding-bottom: 8px; }
+.sepet-toplam { display: flex; justify-content: space-between; font-size: 16px; }
+.sepet textarea { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--cizgi); border-radius: 10px; background: var(--zemin); color: var(--yazi); resize: vertical; }
+.sepet .btn { justify-content: center; cursor: pointer; }
+.sepet .btn:disabled { opacity: .6; cursor: wait; }
+.izgara > *, .urun-govde, .portal-govde > * { min-width: 0; }
+.siparis-giris select { width: 0; }
+.sepet-git { position: fixed; left: 16px; bottom: 18px; z-index: 20; background: var(--yazi); color: var(--zemin); text-decoration: none; font-weight: 700; padding: 12px 16px; border-radius: 999px; box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+@media (min-width: 901px) { .sepet-git { display: none; } }
