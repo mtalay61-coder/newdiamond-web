@@ -146,21 +146,123 @@
       .catch((e) => { const m = hataMetni(e); if (m === HATA.GECERSIZ_KOD) { depo.yaz(""); kod = ""; } girisCiz(m); });
   }
 
-  function cikis() { depo.yaz(""); kod = ""; veri = null; sepet = []; sepetGitYenile(); girisCiz(); }
+  function cikis() { depo.yaz(""); kod = ""; veri = null; sepet = []; hesap = null; sekme = "koleksiyon"; sepetGitYenile(); girisCiz(); }
+
+  // ÜÇ SEKME (v1.648.0 — kullanıcı: "carinin de ekranı olsun, hesaplarını ve siparişlerini de kontrol edebileceği"):
+  // Koleksiyon (sipariş verme) · Hesabım (bakiye, ekstre, çekler) · Siparişlerim. Hesap/sipariş verisi `portal_hesap()`
+  // ile, sekme açılınca okunur (koleksiyon açılışını yavaşlatmasın).
+  let sekme = "koleksiyon";
+  let hesap = null;          // portal_hesap cevabı
+  const bugun = () => new Date().toISOString().slice(0, 10);
+  let aralik = { bas: new Date(Date.now() - 92 * 864e5).toISOString().slice(0, 10), bit: bugun() };
 
   function ciz() {
-    const modeller = veri.modeller || [];
-    const tipler = Array.from(new Set(modeller.map((u) => u.tip).filter(Boolean)));
     const ust = el("div", { class: "portal-ust" },
       el("span", {}, "Hoş geldiniz, ", el("b", {}, veri.unvan || "")),
       el("button", { class: "bag", type: "button", onclick: cikis }, "Çıkış"));
+    const sekmeler = el("div", { class: "portal-sekmeler", role: "tablist" },
+      ...[["koleksiyon", "Koleksiyon"], ["hesap", "Hesabım"], ["siparis", "Siparişlerim"]].map(([k, ad]) =>
+        el("button", { type: "button", role: "tab", class: sekme === k ? "etkin" : "", "aria-selected": sekme === k ? "true" : "false", onclick: () => { sekme = k; ciz(); } }, ad)));
+    let govde;
+    if (sekme === "koleksiyon") govde = koleksiyonCiz();
+    else if (!hesap) { govde = el("div", { class: "bilgi" }, "Yükleniyor…"); hesapYukle(); }
+    else govde = sekme === "hesap" ? hesapCiz() : siparislerCiz();
+    alan.replaceChildren(ust, sekmeler, govde);
+  }
+
+  function hesapYukle() {
+    rpc("portal_hesap", { p_kod: kod, p_baslangic: aralik.bas, p_bitis: aralik.bit })
+      .then((h) => { hesap = h; ciz(); })
+      .catch((e) => {
+        const m = String((e && e.message) || e);
+        alan.lastChild.replaceWith(el("div", { class: "bilgi" }, /GECERSIZ_KOD/.test(m) ? HATA.GECERSIZ_KOD : /GECERSIZ_TARIH/.test(m) ? "Tarih aralığı geçersiz." : "Hesap bilgisi alınamadı. Biraz sonra tekrar deneyin."));
+      });
+  }
+
+  function koleksiyonCiz() {
+    const modeller = veri.modeller || [];
+    const tipler = Array.from(new Set(modeller.map((u) => u.tip).filter(Boolean)));
     const suzgec = el("div", { class: "suzgec" });
     if (tipler.length > 1) ["Tümü", ...tipler].forEach((t) => suzgec.append(el("button", { type: "button", class: t === secili ? "etkin" : "", onclick: () => { secili = t; ciz(); } }, t)));
     const izgara = el("div", { class: "izgara" });
     const gorunen = modeller.filter((u) => secili === "Tümü" || u.tip === secili);
     if (!gorunen.length) izgara.append(el("div", { class: "bilgi", style: "grid-column:1/-1" }, "Size tanımlı model henüz yok. Bilgi için bize ulaşın."));
     gorunen.forEach((u) => izgara.append(urunKarti(u)));
-    alan.replaceChildren(ust, suzgec, el("div", { class: "portal-govde" }, izgara, sepetCiz()));
+    return el("div", {}, suzgec, el("div", { class: "portal-govde" }, izgara, sepetCiz()));
+  }
+
+  const tarihTR = (t) => { if (!t) return ""; const [y, a, g] = String(t).slice(0, 10).split("-"); return g ? g + "." + a + "." + y : t; };
+  // Bakiye işareti ERP'deki gibi: artı = müşterinin borcu, eksi = müşterinin alacağı.
+  const bakiyeYazi = (t, pb) => t > 0 ? para(t, pb) + " borç" : t < 0 ? para(-t, pb) + " alacak" : para(0, pb);
+
+  function hesapCiz() {
+    const bas = el("input", { type: "date", value: aralik.bas, "aria-label": "Başlangıç" });
+    const bit = el("input", { type: "date", value: aralik.bit, "aria-label": "Bitiş" });
+    const arac = el("div", { class: "hesap-arac" },
+      el("label", {}, "Başlangıç ", bas), el("label", {}, "Bitiş ", bit),
+      el("button", { type: "button", class: "btn dolu kucuk-btn", onclick: () => { if (bas.value && bit.value) { aralik = { bas: bas.value, bit: bit.value }; hesap = null; ciz(); } } }, "Göster"),
+      el("button", { type: "button", class: "btn bos kucuk-btn", onclick: () => window.print() }, "Yazdır"));
+    const bloklar = (hesap.hesap || []).map((d) => {
+      const coklu = (hesap.hesap || []).length > 1;
+      const bakiyeler = Object.entries(d.bakiye || {});
+      const ozet = el("div", { class: "bakiye-satir" },
+        ...(bakiyeler.length ? bakiyeler : [["TRY", 0]]).map(([pb, t]) => el("div", { class: "bakiye-kutu" + (t > 0 ? " borc" : t < 0 ? " alacak" : "") },
+          el("span", {}, "Güncel bakiye" + (bakiyeler.length > 1 ? " (" + pb + ")" : "")), el("b", {}, bakiyeYazi(Number(t), pb)))));
+      // Yürüyen bakiye para birimi başına, dönem başı devirden.
+      const yuruyen = { ...Object.fromEntries(Object.entries(d.devir || {}).map(([k, v]) => [k, Number(v)])) };
+      const satirlar = [];
+      Object.entries(d.devir || {}).forEach(([pb, t]) => { if (Number(t)) satirlar.push(el("tr", { class: "devir" }, el("td", {}, tarihTR(hesap.baslangic)), el("td", {}, ""), el("td", {}, "Önceki dönemden devir"), el("td", {}, ""), el("td", {}, ""), el("td", { class: "sayi" }, bakiyeYazi(Number(t), pb)))); });
+      (d.hareketler || []).forEach((h) => {
+        const pb = h.paraBirimi || "TRY"; const t = Number(h.tutar) || 0;
+        yuruyen[pb] = (yuruyen[pb] || 0) + (h.yon === "Borç" ? t : -t);
+        const aciklama = [h.aciklama, [h.urunAd, h.renk].filter(Boolean).join(" "), h.odemeSekli, h.vade ? "vade " + tarihTR(h.vade) : ""].filter(Boolean).join(" · ");
+        satirlar.push(el("tr", {},
+          el("td", {}, tarihTR(h.tarih)), el("td", { class: "mono" }, h.fisNo || h.siparisNo || ""), el("td", {}, aciklama),
+          el("td", { class: "sayi" }, h.yon === "Borç" ? para(t, pb) : ""), el("td", { class: "sayi" }, h.yon !== "Borç" ? para(t, pb) : ""),
+          el("td", { class: "sayi" }, bakiyeYazi(Math.round(yuruyen[pb] * 100) / 100, pb))));
+      });
+      const tablo = satirlar.length
+        ? el("div", { class: "tablo-kap" }, el("table", { class: "ekstre" },
+            el("thead", {}, el("tr", {}, ...["Tarih", "Belge", "Açıklama", "Borç", "Alacak", "Bakiye"].map((b) => el("th", {}, b)))),
+            el("tbody", {}, ...satirlar)))
+        : el("p", { class: "kucuk" }, "Bu tarih aralığında hareket yok.");
+      return el("section", { class: "hesap-blok" }, coklu ? el("h3", {}, d.defter === "Resmi" ? "Resmi hesap" : "Hesap") : null, ozet, tablo);
+    });
+    const cekler = hesap.cekler || [];
+    const cekBlok = cekler.length ? el("section", { class: "hesap-blok" }, el("h3", {}, "Çek ve senetler"),
+      el("div", { class: "tablo-kap" }, el("table", { class: "ekstre" },
+        el("thead", {}, el("tr", {}, ...["Vade", "No", "Banka", "Tutar", "Durum"].map((b) => el("th", {}, b)))),
+        el("tbody", {}, ...cekler.map((c) => el("tr", { class: c.durum === "Portföyde" && c.vade && c.vade < bugun() ? "gecti" : "" },
+          el("td", {}, tarihTR(c.vade)), el("td", { class: "mono" }, c.cekNo || ""), el("td", {}, c.banka || ""),
+          el("td", { class: "sayi" }, para(Number(c.tutar) || 0, c.paraBirimi)), el("td", {}, c.durum || ""))))))) : null;
+    return el("div", { class: "hesap" }, arac, el("p", { class: "kucuk yazdir-baslik" }, (veri.unvan || "") + " · " + tarihTR(hesap.baslangic) + " – " + tarihTR(hesap.bitis)), ...bloklar, cekBlok);
+  }
+
+  function siparislerCiz() {
+    const talepler = hesap.talepler || [];
+    const sip = hesap.siparisler || [];
+    const talepBlok = talepler.length ? el("section", { class: "hesap-blok" }, el("h3", {}, "Siteden gönderdikleriniz"),
+      ...talepler.map((t) => el("div", { class: "sip-kart" },
+        el("div", { class: "sip-bas" }, el("b", {}, tarihTR(String(t.tarih).slice(0, 10))), el("span", {}, t.toplamCift + " çift"),
+          el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : "sari") }, t.durum === "reddedildi" ? "Kabul edilmedi" : "Onay bekliyor")),
+        t.not ? el("div", { class: "kucuk" }, t.not) : null))) : null;
+    const kartlar = sip.map((s) => {
+      const top = (s.kalemler || []).reduce((a, k) => ({ m: a.m + Number(k.miktar || 0), t: a.t + Number(k.teslim || 0) }), { m: 0, t: 0 });
+      const durum = top.m && top.t >= top.m ? ["Teslim edildi", "yesil"] : top.t > 0 ? ["Kısmen teslim", "sari"] : ["Hazırlanıyor", "mavi"];
+      return el("div", { class: "sip-kart" },
+        el("div", { class: "sip-bas" }, el("b", { class: "mono" }, s.siparisNo || ""), el("span", {}, tarihTR(s.tarih)),
+          s.belgeNo ? el("span", { class: "kucuk" }, "Belge " + s.belgeNo) : null,
+          s.teslimTarihi ? el("span", { class: "kucuk" }, "Termin " + tarihTR(s.teslimTarihi)) : null,
+          el("span", { class: "rozet " + durum[1] }, durum[0])),
+        el("div", { class: "tablo-kap" }, el("table", { class: "ekstre" },
+          el("thead", {}, el("tr", {}, ...["Model", "Renk", "Sipariş", "Teslim", "Kalan"].map((b) => el("th", {}, b)))),
+          el("tbody", {}, ...(s.kalemler || []).map((k) => el("tr", {},
+            el("td", {}, k.urunAd || ""), el("td", {}, k.renk || ""), el("td", { class: "sayi" }, String(k.miktar)),
+            el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim)))))),
+          el("tfoot", {}, el("tr", {}, el("td", {}, "Toplam"), el("td", {}, ""), el("td", { class: "sayi" }, String(top.m)), el("td", { class: "sayi" }, String(top.t)), el("td", { class: "sayi" }, String(Math.max(0, top.m - top.t))))))));
+    });
+    if (!talepBlok && !kartlar.length) return el("div", { class: "bilgi" }, "Henüz siparişiniz yok.");
+    return el("div", { class: "hesap" }, talepBlok, kartlar.length ? el("section", { class: "hesap-blok" }, el("h3", {}, "Siparişleriniz"), ...kartlar) : null);
   }
 
   // Kart: renk düğmesi o rengin resmini açar ve siparişin rengini seçer; altta sipariş girişi.
@@ -262,7 +364,7 @@
     const gonder = el("button", { type: "button", class: "btn dolu", onclick: () => {
       gonder.disabled = true; durum.className = "kucuk"; durum.textContent = "Gönderiliyor…";
       rpc("portal_siparis", { p_kod: kod, p_kalemler: sepet.map((s) => ({ urunId: s.urunId, renk: s.renk, beden: s.beden, miktar: s.miktar })), p_not: not.value })
-        .then(() => { sepet = []; kutu.replaceWith(sepetCiz(true)); sepetGitYenile(); })
+        .then(() => { sepet = []; hesap = null; kutu.replaceWith(sepetCiz(true)); sepetGitYenile(); })
         .catch((e) => { gonder.disabled = false; durum.className = "hata"; durum.textContent = hataMetni(e); });
     } }, "Siparişi gönder");
     kutu.append(
