@@ -212,6 +212,47 @@
   // KULLANICI ADI + ŞİFRE (v1.649.0 — kullanıcı: "müşteri giriş yaparken kullanıcı adı ve şifre ile girsin").
   // `portal_giris` doğruysa 30 günlük oturum anahtarı döner (yanlışsa boş); anahtar `kod` olarak saklanır ve bütün
   // çağrılara geçer. Şifre tarayıcıda saklanmaz.
+  // KAYIT OL (ERP v1.657.0 — kullanıcı: "kaydı olmayan için kayıt ol butonu da olsun, cari bilgileri, adresi vs.
+  // ekleyip kayıt olsun; sisteme düşsün, onaylayıp kayıt ekleyelim"). `site_kayit_ol` talebi yazar; giriş ERP'de
+  // onaylanınca açılır (seçilen kullanıcı adı + şifre). Şifre burada saklanmaz, sunucuda yalnız özeti tutulur.
+  function kayitCiz() {
+    const kutu = (ad, etiket, ozellik) => el("label", { class: "kayit-alan" + (ad === "adres" || ad === "not" ? " genis" : "") }, el("span", {}, T(etiket)),
+      el(ad === "adres" || ad === "not" ? "textarea" : "input", { class: "giris-kutu", name: "k-" + ad, maxlength: ad === "adres" || ad === "not" ? "600" : "300", rows: "2", ...(ozellik || {}) }));
+    const alanlar = [["unvan", "kUnvan", { required: true }], ["yetkili", "kYetkili"], ["telefon", "kTelefon", { type: "tel", required: true }], ["eposta", "kEposta", { type: "email" }],
+      ["vergiDairesi", "kVergiDairesi"], ["vergiNo", "kVergiNo"], ["ulke", "kUlke"], ["il", "kIl"], ["ilce", "kIlce"], ["adres", "kAdres"], ["not", "kNot"]];
+    const kutular = alanlar.map(([ad, et, oz]) => [ad, kutu(ad, et, oz)]);
+    const kAd = kutu("kullanici", "kKullanici", { autocomplete: "username", autocapitalize: "none", spellcheck: "false", maxlength: "40", required: true });
+    const kSifre = kutu("sifre", "kSifre2", { type: "password", autocomplete: "new-password", maxlength: "100", required: true });
+    const dugme = el("button", { class: "btn dolu", type: "submit" }, T("kGonder"));
+    const hataP = el("p", { class: "hata" }); hataP.hidden = true;
+    const geri = el("a", { href: "#koleksiyon", onclick: (e) => { e.preventDefault(); girisCiz(); } }, T("kGeri"));
+    const form = el("form", { class: "portal-giris kayit-formu", "data-kayit-formu": "1" },
+      el("h3", {}, T("kayitBaslik")), el("p", {}, T("kayitAciklama")),
+      el("div", { class: "kayit-izgara" }, ...kutular.map((x) => x[1]), kAd, kSifre),
+      hataP, el("div", { class: "kayit-alt" }, dugme, geri));
+    const deger = (l) => l.querySelector("input,textarea").value.trim();
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const bilgi = {}; kutular.forEach(([ad, l]) => { const v = deger(l); if (v) bilgi[ad] = v; });
+      const ad = deger(kAd).toLowerCase(), sifre = kSifre.querySelector("input").value;
+      const hata = (m) => { hataP.textContent = T(m); hataP.hidden = false; };
+      if (!bilgi.unvan || !bilgi.telefon) return hata("hataKayitBilgi");
+      if (!/^[a-z0-9._-]{3,40}$/.test(ad)) return hata("hataKayitKullanici");
+      if (sifre.length < 6) return hata("hataKayitSifre");
+      dugme.disabled = true; dugme.textContent = T("kGonderiliyor"); hataP.hidden = true;
+      rpc("site_kayit_ol", { p_bilgi: bilgi, p_kullanici: ad, p_sifre: sifre })
+        .then(() => alan.replaceChildren(el("div", { class: "portal-giris", "data-kayit-tamam": "1" }, el("h3", {}, T("kayitBaslik")), el("p", { class: "tamam" }, T("kTamam")), el("p", { class: "kucuk" }, el("b", {}, ad), " · ", el("a", { href: "#koleksiyon", onclick: (ev) => { ev.preventDefault(); girisCiz(); } }, T("kGeri"))))))
+        .catch((er) => {
+          const m = String((er && er.message) || er);
+          dugme.disabled = false; dugme.textContent = T("kGonder");
+          hata(/KULLANICI_ALINMIS/.test(m) ? "hataKayitAlinmis" : /GECERSIZ_KULLANICI/.test(m) ? "hataKayitKullanici" : /GECERSIZ_SIFRE/.test(m) ? "hataKayitSifre"
+            : /GECERSIZ_BILGI/.test(m) ? "hataKayitBilgi" : /GUNLUK_SINIR/.test(m) ? "hataKayitSinir" : "hataBaglanti");
+        });
+    };
+    alan.replaceChildren(form);
+    form.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
   function girisCiz(hata) {
     const kAd = el("input", { class: "giris-kutu", placeholder: T("kullaniciAdi"), autocomplete: "username", autocapitalize: "none", spellcheck: "false", maxlength: "40", "aria-label": T("kullaniciAdi"), name: "username" });
     const kSifre = el("input", { class: "giris-kutu", type: "password", placeholder: T("sifre"), autocomplete: "current-password", maxlength: "100", "aria-label": T("sifre"), name: "password" });
@@ -225,7 +266,7 @@
       el("p", {}, T("girisAciklama")),
       el("div", { class: "giris-alanlar" }, kAd, kSifre, dugme),
       hataP,
-      el("p", { class: "kucuk" }, T("bilgiYok"), istek));
+      el("p", { class: "kucuk" }, T("hesabinYokMu"), " ", el("a", { href: "#koleksiyon", "data-kayit-ol": "1", onclick: (e) => { e.preventDefault(); kayitCiz(); } }, T("kayitOl")), " · ", T("bilgiYok"), istek));
     form.onsubmit = (e) => {
       e.preventDefault();
       const ad = kAd.value.trim(), sifre = kSifre.value;

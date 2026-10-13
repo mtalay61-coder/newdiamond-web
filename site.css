@@ -243,3 +243,13 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 @media (max-width: 640px) { .ust .kap { gap: 8px; } .ust-giris { padding: 7px 10px; font-size: 13px; } }
 @media (max-width: 640px) { .menu { display: none; } .ust .kap { justify-content: space-between; } .dil-secici { margin-left: auto; } }
 @media (max-width: 420px) { .marka > span:not(.marka-isaret) { display: none; } }
+
+/* KAYIT OL (ERP v1.657.0) */
+.kayit-formu { max-width: 720px; }
+.kayit-izgara { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.kayit-alan { display: grid; gap: 4px; font-size: 13px; color: var(--yazi-2); }
+.kayit-alan.genis { grid-column: 1 / -1; }
+.kayit-alan textarea { resize: vertical; font: inherit; border-radius: 12px; }
+.kayit-alt { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.kayit-alt a { color: var(--vurgu); font-weight: 700; }
+@media (max-width: 560px) { .kayit-izgara { grid-template-columns: 1fr; } }
