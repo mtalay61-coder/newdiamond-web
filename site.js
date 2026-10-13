@@ -455,6 +455,14 @@
         el("tbody", {}, el("tr", {}, ...sirali.map((x) => el("td", {}, String(b[x])))))));
   }
 
+  // SATIR DURUMU (ERP v1.660.0 — kullanıcı: "siparişe çevrilen stoklar sipariş durumuna göre güncellensin: üretimde,
+  // bekliyor, sevk edildi"): teslim ≥ miktar → Sevk edildi; kısmen → Kısmen sevk; bağlı bitmemiş üretim → Üretimde; yoksa Bekliyor.
+  const satirDurumu = (k) => {
+    const m = Number(k.miktar || 0), t = Number(k.teslim || 0);
+    const [a, r] = m && t >= m ? ["sevkEdildi", "yesil"] : t > 0 ? ["kismenSevk", "sari"] : k.uretimde ? ["uretimdeS", "mavi"] : ["bekliyorS", "gri"];
+    return el("span", { class: "rozet kucuk-rozet " + r, "data-satir-durum": a }, T(a));
+  };
+
   function siparislerCiz() {
     const talepler = hesap.talepler || [];
     const sip = hesap.siparisler || [];
@@ -465,9 +473,15 @@
           el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : t.durum === "siparis" ? "yesil" : "sari") },
             t.durum === "reddedildi" ? T("kabulEdilmedi") : t.durum === "siparis" ? T("siparisOldu") + (t.siparisNo ? " · " + t.siparisNo : "") : T("onayBekliyor"))),
         t.durum === "reddedildi" && t.redSebebi ? el("p", { class: "red-sebebi" }, T("sebep") + ": " + t.redSebebi) : null,
-        el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => el("div", { class: "talep-kalem" },
-          minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, cAd(k.urunId, k.urunAd)), " · ", cRenk(k.renk)),
-          el("span", { class: "kucuk" }, k.miktar + " " + T("cift") + (Number(k.tutar) > 0 ? " · " + para(Number(k.tutar), k.paraBirimi) : " · " + T("fiyatOnayda")))))),
+        el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => {
+          // Siparişe çevrilmiş talepte satır SİPARİŞTEN okunur (ERP'de belirlenen fiyat + güncel durum).
+          const sp = t.durum === "siparis" ? sip.find((s) => s.siparisNo === t.siparisNo) : null;
+          const sk = sp ? (sp.kalemler || []).find((x) => String(x.urunId) === String(k.urunId) && x.renk === k.renk) : null;
+          const tutar = sk ? Number(sk.tutar) : Number(k.tutar);
+          return el("div", { class: "talep-kalem" },
+            minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, cAd(k.urunId, k.urunAd)), " · ", cRenk(k.renk)),
+            el("span", { class: "kucuk" }, (sk ? sk.miktar : k.miktar) + " " + T("cift") + (tutar > 0 ? " · " + para(tutar, (sk || k).paraBirimi) : sk ? "" : " · " + T("fiyatOnayda")), sk ? " " : null, sk ? satirDurumu(sk) : null));
+        })),
         t.odeme ? el("div", { class: "kucuk" }, T("odemeSekli") + ": " + ((T("odemeTip") || {})[t.odeme.tip] || t.odeme.tip) + (t.odeme.vadeGun ? " · " + t.odeme.vadeGun + " " + T("vadeGun").replace(/\s*\(.*\)/, "").toLowerCase() : "")) : null,
         (t.kalemler || []).some((k) => Number(k.tutar) > 0) ? el("div", { class: "kucuk", style: "text-align:right" }, T("toplam") + " " + tutarToplami(t.kalemler)) : null,
         t.not ? el("div", { class: "kucuk" }, t.not) : null))) : null;
@@ -485,7 +499,7 @@
           el("colgroup", {}, ...[30, 16, 9, 9, 9, 12, 15].map((w) => el("col", { style: "width:" + w + "%" }))),
           el("thead", {}, el("tr", {}, ...[T("model"), T("renk"), T("siparis"), T("teslim"), T("kalan"), T("fiyat"), T("tutar")].map((b, i) => el("th", { class: i >= 2 ? "sayi" : "" }, b)))),
           el("tbody", {}, ...(s.kalemler || []).map((k) => el("tr", {},
-            el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), el("span", {}, cAd(k.urunId, k.urunAd), dagilim(k)))), el("td", {}, cRenk(k.renk)), el("td", { class: "sayi" }, String(k.miktar)),
+            el("td", {}, el("span", { class: "model-hucre" }, minik(hesapResmi(k), k.urunAd), el("span", {}, cAd(k.urunId, k.urunAd), dagilim(k)))), el("td", {}, cRenk(k.renk), el("div", {}, satirDurumu(k))), el("td", { class: "sayi" }, String(k.miktar)),
             el("td", { class: "sayi" }, String(k.teslim)), el("td", { class: "sayi" }, String(Math.max(0, k.miktar - k.teslim))),
             // Fiyat + tutar (kullanıcı: "sipariş fiyat ve tutar da görünsün"). Beden fiyatları farklıysa fiyat ortalamadır.
             el("td", { class: "sayi" }, k.fiyat != null ? para(Number(k.fiyat), k.paraBirimi) : ""),

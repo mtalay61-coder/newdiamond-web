@@ -272,3 +272,7 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .beden-matris th { background: var(--kart); color: var(--yazi-3); font-weight: 700; }
 .beden-matris td { font-weight: 700; color: var(--yazi); }
 .beden-matris .top { background: color-mix(in srgb, var(--vurgu) 10%, transparent); color: var(--vurgu); }
+
+/* Satır durumu (ERP v1.660.0) */
+.kucuk-rozet { font-size: 11px; padding: 1px 8px; display: inline-block; margin-top: 3px; }
+.rozet.gri { background: color-mix(in srgb, var(--yazi-3) 15%, transparent); color: var(--yazi-2); }
