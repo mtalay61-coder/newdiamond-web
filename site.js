@@ -91,7 +91,7 @@
         const govde = yap("div", "urun-govde");
         govde.append(yap("div", "urun-ad", adi(u)));
         if (u.tip) govde.append(yap("div", "urun-alt", soz("tip", u.tip)));
-        const giris = yap("a", "fiyat onayda", T("fiyatIcinGiris")); giris.href = "#koleksiyon";
+        const giris = yap("a", "fiyat onayda", T("fiyatIcinGiris")); giris.href = "musteri.html";
         govde.append(giris, renkKutu);
         const art = yap("article", "urun"); art.append(rk, govde); return art;
       }));
@@ -253,26 +253,16 @@
     form.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
-  // GİRİŞ KUTUSU ANA SAYFADA DURMAZ (kullanıcı: "müşteri girişi sağda üstte, ana sayfadan kaldıralım"): girişsiz
-  // ziyaretçide Koleksiyon bölümü gizli; sağ üstteki "Müşteri girişi" (ya da #koleksiyon bağlantısı) açar. Giriş
-  // yapılmışsa bölüm hep açık (portal orada).
-  const bolum = document.getElementById("koleksiyon");
-  let girisAcik = location.hash === "#koleksiyon";
-  const bolumGoster = () => { if (bolum) bolum.hidden = !(kod || girisAcik); };
-  document.addEventListener("click", (e) => {
-    const a = e.target.closest && e.target.closest('a[href="#koleksiyon"]');
-    if (!a || kod || girisAcik) return;
-    girisAcik = true; bolumGoster();
-  }, true);
-  window.addEventListener("hashchange", () => { if (location.hash === "#koleksiyon" && !girisAcik) { girisAcik = true; bolumGoster(); if (bolum) bolum.scrollIntoView(); } });
-
+  // MÜŞTERİ GİRİŞİ AYRI SAYFA (kullanıcı: "ana sayfada bu var, kaldıralım; müşteri girişini ayrı sayfa olarak açalım"):
+  // portal yalnız musteri.html'de ([data-portal] orada); ana sayfada bu blok hiç çalışmaz (yukarıda `if (!alan) return`).
+  const bolumGoster = () => {};
   function girisCiz(hata) {
     const kAd = el("input", { class: "giris-kutu", placeholder: T("kullaniciAdi"), autocomplete: "username", autocapitalize: "none", spellcheck: "false", maxlength: "40", "aria-label": T("kullaniciAdi"), name: "username" });
     const kSifre = el("input", { class: "giris-kutu", type: "password", placeholder: T("sifre"), autocomplete: "current-password", maxlength: "100", "aria-label": T("sifre"), name: "password" });
     const dugme = el("button", { class: "btn dolu", type: "submit" }, T("giris"));
     const istek = S.whatsapp
       ? el("a", { href: "https://wa.me/" + String(S.whatsapp).replace(/\D/g, "") + "?text=" + encodeURIComponent(T("waGirisIstegi")), target: "_blank", rel: "noopener" }, T("bizdenIsteyin"))
-      : el("a", { href: "#iletisim" }, T("bizdenIsteyin"));
+      : el("a", { href: "./#iletisim" }, T("bizdenIsteyin"));
     const hataP = el("p", { class: "hata" }, hata || ""); if (!hata) hataP.hidden = true;
     const form = el("form", { class: "portal-giris" },
       el("h3", {}, T("girisBaslik")),
@@ -316,7 +306,6 @@
   let aralik = { bas: new Date(Date.now() - 92 * 864e5).toISOString().slice(0, 10), bit: bugun() };
 
   function ciz() {
-    if (bolum) bolum.hidden = false;
     const ust = el("div", { class: "portal-ust" },
       el("span", {}, T("hosgeldiniz"), el("b", {}, veri.unvan || "")),
       el("button", { class: "bag", type: "button", onclick: cikis }, T("cikis")));

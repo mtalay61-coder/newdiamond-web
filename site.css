@@ -253,3 +253,7 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .kayit-alt { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .kayit-alt a { color: var(--vurgu); font-weight: 700; }
 @media (max-width: 560px) { .kayit-izgara { grid-template-columns: 1fr; } }
+
+/* Müşteri sayfası (musteri.html): giriş kutusu ortada, sayfa boş görünmesin. */
+.musteri-sayfa { min-height: calc(100vh - 140px); }
+.musteri-sayfa .portal-giris { margin: 0 auto; }

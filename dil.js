@@ -24,7 +24,7 @@
 
   const SOZLUK = {
     tr: {
-      menuKoleksiyon: "Koleksiyon", menuUretim: "Üretim", menuIletisim: "İletişim", menuGiris: "Müşteri girişi",
+      menuKoleksiyon: "Koleksiyon", menuUretim: "Üretim", menuIletisim: "İletişim", menuGiris: "Müşteri girişi", menuAnasayfa: "Ana sayfa",
       telefon: "Telefon", eposta: "E-posta", adres: "Adres", instagram: "Instagram", profilimiz: "Profilimiz", konum: "Konum",
       kayitOl: "Kayıt ol", hesabinYokMu: "Hesabınız yok mu?", kayitBaslik: "Müşteri kaydı", kayitAciklama: "Firma bilgilerinizi girin. Kaydınız onaylanınca seçtiğiniz kullanıcı adı ve şifreyle girebilirsiniz.", kUnvan: "Firma ünvanı *", kYetkili: "Yetkili kişi", kTelefon: "Telefon *", kEposta: "E-posta", kVergiDairesi: "Vergi dairesi", kVergiNo: "Vergi no / TCKN", kUlke: "Ülke", kIl: "İl / şehir", kIlce: "İlçe", kAdres: "Adres", kNot: "Not (isteğe bağlı)", kSifre2: "Şifre (en az 6 karakter) *", kKullanici: "Kullanıcı adı *", kGonder: "Kaydı gönder", kGonderiliyor: "Gönderiliyor…", kTamam: "Kaydınız alındı. Onaylandığında bu kullanıcı adı ve şifreyle giriş yapabilirsiniz.", kGeri: "Girişe dön", hataKayitBilgi: "Firma ünvanı ve telefon gerekli.", hataKayitKullanici: "Kullanıcı adı 3-40 karakter: harf, rakam, nokta, tire.", hataKayitSifre: "Şifre en az 6 karakter olmalı.", hataKayitAlinmis: "Bu kullanıcı adı alınmış, başka bir ad seçin.", hataKayitSinir: "Bugün çok sayıda kayıt geldi; lütfen bizi arayın.",
       girisBaslik: "Müşteri girişi", girisAciklama: "Kullanıcı adınız ve şifrenizle girin; modelleri, size özel fiyatları, siparişlerinizi ve hesabınızı görün.",
@@ -63,7 +63,7 @@
       cekDurum: { "Portföyde": "Portföyde", "Ciro Edildi": "Ciro edildi", "Tahsilde": "Tahsilde", "Tahsil Edildi": "Tahsil edildi", "Karşılıksız": "Karşılıksız" },
     },
     en: {
-      menuKoleksiyon: "Collection", menuUretim: "Production", menuIletisim: "Contact", menuGiris: "Customer login",
+      menuKoleksiyon: "Collection", menuUretim: "Production", menuIletisim: "Contact", menuGiris: "Customer login", menuAnasayfa: "Home",
       telefon: "Phone", eposta: "E-mail", adres: "Address", instagram: "Instagram", profilimiz: "Our profile", konum: "Location",
       kayitOl: "Sign up", hesabinYokMu: "No account yet?", kayitBaslik: "Customer registration", kayitAciklama: "Enter your company details. Once approved, you can sign in with the username and password you choose.", kUnvan: "Company name *", kYetkili: "Contact person", kTelefon: "Phone *", kEposta: "E-mail", kVergiDairesi: "Tax office", kVergiNo: "Tax / ID number", kUlke: "Country", kIl: "City", kIlce: "District", kAdres: "Address", kNot: "Note (optional)", kSifre2: "Password (min. 6 characters) *", kKullanici: "Username *", kGonder: "Send registration", kGonderiliyor: "Sending…", kTamam: "Your registration was received. You can sign in with this username and password once it is approved.", kGeri: "Back to login", hataKayitBilgi: "Company name and phone are required.", hataKayitKullanici: "Username: 3-40 characters — letters, digits, dot, dash.", hataKayitSifre: "Password must be at least 6 characters.", hataKayitAlinmis: "This username is taken, please choose another.", hataKayitSinir: "Too many registrations today; please call us.",
       girisBaslik: "Customer login", girisAciklama: "Sign in with your username and password to see our models, your prices, your orders and your account.",
@@ -101,7 +101,7 @@
       cekDurum: { "Portföyde": "Held", "Ciro Edildi": "Endorsed", "Tahsilde": "In collection", "Tahsil Edildi": "Collected", "Karşılıksız": "Bounced" },
     },
     ru: {
-      menuKoleksiyon: "Коллекция", menuUretim: "Производство", menuIletisim: "Контакты", menuGiris: "Вход для клиентов",
+      menuKoleksiyon: "Коллекция", menuUretim: "Производство", menuIletisim: "Контакты", menuGiris: "Вход для клиентов", menuAnasayfa: "Главная",
       telefon: "Телефон", eposta: "E-mail", adres: "Адрес", instagram: "Instagram", profilimiz: "Наш профиль", konum: "Расположение",
       kayitOl: "Регистрация", hesabinYokMu: "Нет аккаунта?", kayitBaslik: "Регистрация клиента", kayitAciklama: "Укажите данные компании. После подтверждения вы сможете войти с выбранным логином и паролем.", kUnvan: "Название компании *", kYetkili: "Контактное лицо", kTelefon: "Телефон *", kEposta: "E-mail", kVergiDairesi: "Налоговая инспекция", kVergiNo: "ИНН / номер", kUlke: "Страна", kIl: "Город", kIlce: "Район", kAdres: "Адрес", kNot: "Примечание (необязательно)", kSifre2: "Пароль (не менее 6 символов) *", kKullanici: "Логин *", kGonder: "Отправить", kGonderiliyor: "Отправка…", kTamam: "Заявка получена. После подтверждения вы сможете войти с этим логином и паролем.", kGeri: "Назад ко входу", hataKayitBilgi: "Укажите название компании и телефон.", hataKayitKullanici: "Логин: 3-40 символов — буквы, цифры, точка, дефис.", hataKayitSifre: "Пароль должен быть не менее 6 символов.", hataKayitAlinmis: "Этот логин занят, выберите другой.", hataKayitSinir: "Сегодня слишком много заявок; позвоните нам.",
       girisBaslik: "Вход для клиентов", girisAciklama: "Войдите с логином и паролем, чтобы увидеть модели, ваши цены, заказы и счёт.",
