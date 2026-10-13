@@ -57,7 +57,47 @@
     if (a && typeof a === "object") uygula(a);
     iletisimDoldur();
     portal();
+    vitrin(a || {});
   });
+
+  // HERKESE AÇIK VİTRİN (ERP v1.656.0 — "herkesin göreceği resim de koyalım, müşteri girişi haricinde"): girişsiz
+  // ziyaretçi galeri resimlerini (site_ayarlari().galeri) ve ERP'de "Herkese açık" işaretli modelleri görür — resim, ad,
+  // renkler; FİYAT YOK (sunucu göndermiyor). İkisi de boşsa bölüm gizli kalır. Fonksiyon kurulmamışsa sessizce atlanır.
+  function vitrin(a) {
+    const bolum = document.getElementById("vitrin");
+    if (!bolum) return;
+    const yap = (etiket, sinif, metin) => { const d = document.createElement(etiket); if (sinif) d.className = sinif; if (metin != null) d.textContent = metin; return d; };
+    const resim = (src, alt) => { const i = document.createElement("img"); i.src = src; i.alt = alt || ""; i.loading = "lazy"; return i; };
+    const galeri = (Array.isArray(a.galeri) ? a.galeri : []).filter((u) => /^(data:image\/|https:)/.test(u || ""));
+    const gKutu = bolum.querySelector("[data-galeri]");
+    if (gKutu) gKutu.replaceChildren(...galeri.map((u) => { const d = yap("div", "urun-resim"); d.append(resim(u, a.marka || "")); return d; }));
+    if (galeri.length) bolum.hidden = false;
+    rpc("herkese_acik_vitrin").then((v) => {
+      const modeller = (v && Array.isArray(v.modeller)) ? v.modeller : [];
+      if (!modeller.length) return;
+      const soz = (tur, ad) => { const c = v.ceviriler && v.ceviriler[tur] && v.ceviriler[tur][ad]; return (DIL !== "tr" && c && c[DIL]) || ad || ""; };
+      const adi = (u) => { const c = v.urunCevirileri && v.urunCevirileri[u.id]; return (DIL !== "tr" && c && c[DIL] && c[DIL].ad) || u.ad || ""; };
+      const kutu = bolum.querySelector("[data-vitrin]");
+      kutu.replaceChildren(...modeller.map((u) => {
+        const rr = u.renkResimleri || {};
+        const renkler = (u.renkler || []).filter((r) => r && r !== "Standart");
+        let renk = renkler[0] || "";
+        const rk = yap("div", "urun-resim");
+        const goster = (src) => rk.replaceChildren(src ? resim(src, adi(u)) : yap("span", "yok", T("gorselYakinda")));
+        goster(rr[renk] || u.kapakResmi);
+        const renkKutu = yap("div", "renkler");
+        renkler.forEach((r) => { const b = yap("button", "renk" + (r === renk ? " etkin" : ""), soz("renk", r)); b.type = "button";
+          b.onclick = () => { renk = r; renkKutu.querySelectorAll(".renk").forEach((x) => x.classList.toggle("etkin", x === b)); goster(rr[r] || u.kapakResmi); }; renkKutu.append(b); });
+        const govde = yap("div", "urun-govde");
+        govde.append(yap("div", "urun-ad", adi(u)));
+        if (u.tip) govde.append(yap("div", "urun-alt", soz("tip", u.tip)));
+        const giris = yap("a", "fiyat onayda", T("fiyatIcinGiris")); giris.href = "#koleksiyon";
+        govde.append(giris, renkKutu);
+        const art = yap("article", "urun"); art.append(rk, govde); return art;
+      }));
+      bolum.hidden = false;
+    }).catch(() => { /* fonksiyon yoksa vitrin yalnız galeriyle */ });
+  }
 
   function uygula(a) {
     Object.keys(a).forEach((k) => { if (a[k] !== "" && a[k] != null) S[k] = a[k]; });

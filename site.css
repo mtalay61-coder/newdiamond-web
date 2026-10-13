@@ -228,3 +228,10 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .resim-buyuk img { max-width: min(1100px, 100%); max-height: calc(100vh - 80px); object-fit: contain; border-radius: 10px; background: #fff; }
 .resim-kapat { position: absolute; top: 14px; right: 18px; width: 40px; height: 40px; border-radius: 999px; border: 0; background: rgba(255,255,255,.9); font-size: 26px; line-height: 1; cursor: pointer; }
 .resim-ad { position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; color: #fff; font-weight: 700; }
+
+/* HERKESE AÇIK VİTRİN (ERP v1.656.0): galeri resimleri + girişsiz model kartları. */
+#vitrin .galeri { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px; }
+#vitrin .galeri:empty { display: none; }
+#vitrin .galeri .urun-resim { border-radius: 12px; }
+#vitrin .galeri img { cursor: zoom-in; }
+#vitrin a.fiyat.onayda { text-decoration: none; display: inline-block; }
