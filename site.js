@@ -447,7 +447,12 @@
     const as = asortiBul(b);
     return el("div", { class: "dagilim" },
       as ? el("span", { class: "asorti-rozet" }, T("koliAsorti")(as.kat, cAsorti(as.ad))) : null,
-      ...sirali.map((x) => el("span", { class: "beden-cip" }, el("i", {}, x), String(b[x]))));
+      // MATRİS DÜZENİ (kullanıcı: "beden adet sıralamasını kendi matris düzenimizde yapalım"): ERP sipariş kartı gibi
+      // üstte bedenler, altta adetler — "36 2 · 37 6" çipleri okunmuyordu. Toplam
+      // satırdaki "Sipariş" sütununda, burada tekrar edilmez.
+      el("table", { class: "beden-matris" },
+        el("thead", {}, el("tr", {}, ...sirali.map((x) => el("th", {}, x)))),
+        el("tbody", {}, el("tr", {}, ...sirali.map((x) => el("td", {}, String(b[x])))))));
   }
 
   function siparislerCiz() {

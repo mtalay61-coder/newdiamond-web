@@ -265,3 +265,10 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 .renk.d-stokta::before { content: "● "; color: #2E7D4F; } .renk.d-uretimde::before { content: "● "; color: #B7791F; }
 .red-sebebi { margin: 4px 0 0; font-size: 13px; color: #A33; }
 .suzgec:has(.arama-kutu) { margin-bottom: 14px; align-items: center; }
+
+/* Beden matrisi (Siparişlerim): üstte bedenler, altta adetler. */
+.beden-matris { border-collapse: collapse; margin-top: 6px; font-size: 12px; }
+.beden-matris th, .beden-matris td { border: 1px solid var(--cizgi); padding: 2px 8px; text-align: center; min-width: 30px; }
+.beden-matris th { background: var(--kart); color: var(--yazi-3); font-weight: 700; }
+.beden-matris td { font-weight: 700; color: var(--yazi); }
+.beden-matris .top { background: color-mix(in srgb, var(--vurgu) 10%, transparent); color: var(--vurgu); }
