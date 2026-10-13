@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /musteri.html
+
+Sitemap: https://newdiamond.com.tr/sitemap.xml
