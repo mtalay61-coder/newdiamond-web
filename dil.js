@@ -24,7 +24,7 @@
 
   const SOZLUK = {
     tr: {
-      menuKoleksiyon: "Koleksiyon", menuUretim: "Üretim", menuIletisim: "İletişim",
+      menuKoleksiyon: "Koleksiyon", menuUretim: "Üretim", menuIletisim: "İletişim", menuGiris: "Müşteri girişi",
       telefon: "Telefon", eposta: "E-posta", adres: "Adres", instagram: "Instagram", profilimiz: "Profilimiz", konum: "Konum",
       girisBaslik: "Müşteri girişi", girisAciklama: "Kullanıcı adınız ve şifrenizle girin; modelleri, size özel fiyatları, siparişlerinizi ve hesabınızı görün.",
       kullaniciAdi: "Kullanıcı adı", sifre: "Şifre", giris: "Giriş", girisYapiliyor: "Giriş…",
@@ -62,7 +62,7 @@
       cekDurum: { "Portföyde": "Portföyde", "Ciro Edildi": "Ciro edildi", "Tahsilde": "Tahsilde", "Tahsil Edildi": "Tahsil edildi", "Karşılıksız": "Karşılıksız" },
     },
     en: {
-      menuKoleksiyon: "Collection", menuUretim: "Production", menuIletisim: "Contact",
+      menuKoleksiyon: "Collection", menuUretim: "Production", menuIletisim: "Contact", menuGiris: "Customer login",
       telefon: "Phone", eposta: "E-mail", adres: "Address", instagram: "Instagram", profilimiz: "Our profile", konum: "Location",
       girisBaslik: "Customer login", girisAciklama: "Sign in with your username and password to see our models, your prices, your orders and your account.",
       kullaniciAdi: "Username", sifre: "Password", giris: "Sign in", girisYapiliyor: "Signing in…",
@@ -99,7 +99,7 @@
       cekDurum: { "Portföyde": "Held", "Ciro Edildi": "Endorsed", "Tahsilde": "In collection", "Tahsil Edildi": "Collected", "Karşılıksız": "Bounced" },
     },
     ru: {
-      menuKoleksiyon: "Коллекция", menuUretim: "Производство", menuIletisim: "Контакты",
+      menuKoleksiyon: "Коллекция", menuUretim: "Производство", menuIletisim: "Контакты", menuGiris: "Вход для клиентов",
       telefon: "Телефон", eposta: "E-mail", adres: "Адрес", instagram: "Instagram", profilimiz: "Наш профиль", konum: "Расположение",
       girisBaslik: "Вход для клиентов", girisAciklama: "Войдите с логином и паролем, чтобы увидеть модели, ваши цены, заказы и счёт.",
       kullaniciAdi: "Логин", sifre: "Пароль", giris: "Войти", girisYapiliyor: "Вход…",

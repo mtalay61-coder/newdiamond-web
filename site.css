@@ -235,3 +235,11 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 #vitrin .galeri .urun-resim { border-radius: 12px; }
 #vitrin .galeri img { cursor: zoom-in; }
 #vitrin a.fiyat.onayda { text-decoration: none; display: inline-block; }
+
+/* MÜŞTERİ GİRİŞİ SAĞ ÜSTTE (kullanıcı: "müşteri girişi sağda üstte olsun"): her ekranda görünür, telefonda da. */
+.ust-giris { text-decoration: none; padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; background: var(--vurgu); color: #fff; white-space: nowrap; }
+.ust-giris:hover { background: var(--vurgu-koyu, var(--vurgu)); }
+.menu a.dugme { background: transparent; color: var(--yazi-2); border: 1px solid var(--cizgi); }
+@media (max-width: 640px) { .ust .kap { gap: 8px; } .ust-giris { padding: 7px 10px; font-size: 13px; } }
+@media (max-width: 640px) { .menu { display: none; } .ust .kap { justify-content: space-between; } .dil-secici { margin-left: auto; } }
+@media (max-width: 420px) { .marka > span:not(.marka-isaret) { display: none; } }
