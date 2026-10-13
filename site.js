@@ -54,24 +54,96 @@
 
   const zamanAsimi = new Promise((coz) => setTimeout(() => coz(null), 4000));
   Promise.race([rpc("site_ayarlari").catch(() => null), zamanAsimi]).then((a) => {
-    if (a && typeof a === "object") uygula(a);
+    if (a && typeof a === "object") { uygula(a); bloklariUygula(a); }
     iletisimDoldur();
     portal();
     vitrin(a || {});
   });
 
+  // CANLI ÖNİZLEME (ERP v1.662.0 — blok düzenleyici): ERP, Tanımlar › Web Sitesi'nde bu sayfayı `?onizleme=1` ile
+  // çerçevede açar ve kaydedilmemiş taslağı postMessage ile yollar; sayfa yalnız KENDİ görünüşünü değiştirir (hiçbir
+  // yere yazmaz). Yalnız ERP adresinden (yerel dosyada denerken her yerden) gelen mesaj dinlenir.
+  if (/[?&]onizleme=1\b/.test(location.search)) {
+    window.addEventListener("message", (e) => {
+      const izinli = e.origin === "https://erp.newdiamond.com.tr" || location.protocol === "file:";
+      const d = e.data;
+      if (!izinli || !d || d.tip !== "site-onizleme" || !d.ayar || typeof d.ayar !== "object") return;
+      uygula(d.ayar); bloklariUygula(d.ayar); vitrinGaleri(d.ayar); iletisimDoldur();
+    });
+    if (window.parent !== window) window.parent.postMessage({ tip: "site-onizleme-hazir" }, "*");
+  }
+
+  // SAYFA BLOKLARI (ERP v1.662.0 — kullanıcı: "site tasarımı için araç lazım, canva gibi"): `a.bloklar` sırası sayfanın
+  // sırası. Hazır bölümler (karşılama, vitrin, üretim, iletişim) yerinden taşınır; ERP'de eklenen BANNER ve METİN+RESİM
+  // blokları burada kurulur. Her blok tam genişlik bir kaba girer — arka plan rengi / resmi o kaba uygulanır. Yeniden
+  // çağrılabilir (önizleme her değişiklikte çağırır): eski özel bloklar silinip baştan kurulur.
+  function bloklariUygula(a) {
+    const main = document.querySelector("main");
+    const liste = Array.isArray(a.bloklar) ? a.bloklar : null;
+    if (!main || !liste) return;
+    const guvenliResim = (u) => (/^(data:image\/|https:)/.test(u || "") ? u : "");
+    const cev = (b, alan) => { const c = b.ceviri && b.ceviri[DIL] && b.ceviri[DIL][alan]; return DIL !== "tr" && c ? c : (b[alan] || ""); };
+    const yap = (etiket, sinif, metin) => { const d = document.createElement(etiket); if (sinif) d.className = sinif; if (metin) d.textContent = metin; return d; };
+    // Hazır bölümleri kaplarından çıkar (yeniden çağrıda), eski özel blokları ve kapları sil.
+    main.querySelectorAll("[data-blok-kap]").forEach((k) => { const ic = k.querySelector(":scope > [data-blok]:not([data-blok-ozel])"); if (ic) main.append(ic); k.remove(); });
+    const hazir = {};
+    main.querySelectorAll(":scope > [data-blok]").forEach((x) => { hazir[x.dataset.blok] = x; });
+    const kaplar = [];
+    liste.forEach((b) => {
+      if (!b || !b.tur) return;
+      const kap = yap("div", "blok-kap" + (b.gizli ? " blok-gizli" : ""));
+      kap.dataset.blokKap = b.tur;
+      if (/^#[0-9a-f]{6}$/i.test(b.arkaRenk || "")) kap.style.background = b.arkaRenk;
+      const ar = guvenliResim(b.arkaResim);
+      if (ar) { kap.style.backgroundImage = "url(\"" + ar + "\")"; kap.classList.add("resimli-arka"); }
+      if (b.yaziRengi === "acik") kap.classList.add("acik-yazi");
+      let ic = null;
+      if (hazir[b.tur]) { ic = hazir[b.tur]; delete hazir[b.tur]; }
+      else if (b.tur === "banner") {
+        ic = yap("section", "banner banner-" + (b.yukseklik || "orta") + " hiza-" + (b.hiza || "orta")); ic.dataset.blok = "banner"; ic.dataset.blokOzel = "1";
+        const r = guvenliResim(b.resim);
+        if (r) { ic.style.backgroundImage = "url(\"" + r + "\")"; }
+        const k = yap("div", "kap banner-ic");
+        if (cev(b, "baslik")) k.append(yap("h2", "", cev(b, "baslik")));
+        if (cev(b, "alt")) k.append(yap("p", "", cev(b, "alt")));
+        if (cev(b, "dugme")) { const d = yap("a", "btn dolu", cev(b, "dugme")); d.href = /^(https?:|#|musteri\.html)/.test(b.link || "") ? b.link : "#iletisim"; k.append(d); }
+        ic.append(k);
+      } else if (b.tur === "metinResim") {
+        ic = yap("section", "metin-resim" + (b.resimSolda ? " resim-solda" : "")); ic.dataset.blok = "metinResim"; ic.dataset.blokOzel = "1";
+        const k = yap("div", "kap mr-ic");
+        const m = yap("div", "mr-metin");
+        if (cev(b, "baslik")) m.append(yap("h2", "", cev(b, "baslik")));
+        String(cev(b, "metin")).split(/\n{2,}/).filter(Boolean).forEach((p) => m.append(yap("p", "", p)));
+        k.append(m);
+        const r = guvenliResim(b.resim);
+        if (r) { const f = yap("div", "mr-resim urun-resim"); const img = document.createElement("img"); img.src = r; img.alt = cev(b, "baslik"); img.loading = "lazy"; f.append(img); k.append(f); }
+        ic.append(k);
+      } else return;
+      kap.append(ic); kaplar.push(kap);
+    });
+    // Listede olmayan hazır bölüm (eski kayıt) sona, görünür bırakılır.
+    Object.values(hazir).forEach((x) => { const kap = yap("div", "blok-kap"); kap.dataset.blokKap = x.dataset.blok; kap.append(x); kaplar.push(kap); });
+    main.prepend(...kaplar);
+    document.querySelectorAll("[data-uretim-menu]").forEach((m) => { m.hidden = liste.some((b) => b.tur === "uretim" && b.gizli); });
+  }
+
   // HERKESE AÇIK VİTRİN (ERP v1.656.0 — "herkesin göreceği resim de koyalım, müşteri girişi haricinde"): girişsiz
   // ziyaretçi galeri resimlerini (site_ayarlari().galeri) ve ERP'de "Herkese açık" işaretli modelleri görür — resim, ad,
   // renkler; FİYAT YOK (sunucu göndermiyor). İkisi de boşsa bölüm gizli kalır. Fonksiyon kurulmamışsa sessizce atlanır.
+  function vitrinGaleri(a) {
+    const bolum = document.getElementById("vitrin");
+    if (!bolum) return;
+    const galeri = (Array.isArray(a.galeri) ? a.galeri : []).filter((u) => /^(data:image\/|https:)/.test(u || ""));
+    const gKutu = bolum.querySelector("[data-galeri]");
+    if (gKutu) gKutu.replaceChildren(...galeri.map((u) => { const d = document.createElement("div"); d.className = "urun-resim"; const i = document.createElement("img"); i.src = u; i.alt = a.marka || ""; i.loading = "lazy"; d.append(i); return d; }));
+    if (galeri.length) bolum.hidden = false;
+  }
   function vitrin(a) {
     const bolum = document.getElementById("vitrin");
     if (!bolum) return;
     const yap = (etiket, sinif, metin) => { const d = document.createElement(etiket); if (sinif) d.className = sinif; if (metin != null) d.textContent = metin; return d; };
     const resim = (src, alt) => { const i = document.createElement("img"); i.src = src; i.alt = alt || ""; i.loading = "lazy"; return i; };
-    const galeri = (Array.isArray(a.galeri) ? a.galeri : []).filter((u) => /^(data:image\/|https:)/.test(u || ""));
-    const gKutu = bolum.querySelector("[data-galeri]");
-    if (gKutu) gKutu.replaceChildren(...galeri.map((u) => { const d = yap("div", "urun-resim"); d.append(resim(u, a.marka || "")); return d; }));
-    if (galeri.length) bolum.hidden = false;
+    vitrinGaleri(a);
     rpc("herkese_acik_vitrin").then((v) => {
       const modeller = (v && Array.isArray(v.modeller)) ? v.modeller : [];
       if (!modeller.length) return;

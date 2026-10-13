@@ -276,3 +276,22 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 /* Satır durumu (ERP v1.660.0) */
 .kucuk-rozet { font-size: 11px; padding: 1px 8px; display: inline-block; margin-top: 3px; }
 .rozet.gri { background: color-mix(in srgb, var(--yazi-3) 15%, transparent); color: var(--yazi-2); }
+
+/* SAYFA BLOKLARI (ERP v1.662.0) */
+.blok-kap { background-size: cover; background-position: center; }
+.blok-kap.blok-gizli { display: none !important; }
+.blok-kap.acik-yazi, .blok-kap.acik-yazi h1, .blok-kap.acik-yazi h2, .blok-kap.acik-yazi h3, .blok-kap.acik-yazi p, .blok-kap.acik-yazi .ust-etiket { color: #fff; }
+.blok-kap.resimli-arka.acik-yazi { box-shadow: inset 0 0 0 2000px rgba(0,0,0,.35); }
+.banner { background-size: cover; background-position: center; display: flex; align-items: center; padding: 0; position: relative; }
+.banner::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.45), rgba(0,0,0,.1)); }
+.banner-ic { position: relative; color: #fff; padding-top: 40px; padding-bottom: 40px; width: 100%; }
+.banner-ic h2 { font-size: clamp(28px, 5vw, 48px); margin: 0 0 10px; color: #fff; max-width: 18ch; }
+.banner-ic p { font-size: 18px; margin: 0 0 20px; max-width: 50ch; color: #fff; opacity: .92; }
+.banner.hiza-orta .banner-ic { text-align: center; } .banner.hiza-orta .banner-ic h2, .banner.hiza-orta .banner-ic p { margin-left: auto; margin-right: auto; }
+.banner-kucuk { min-height: 260px; } .banner-orta { min-height: 420px; } .banner-buyuk { min-height: 600px; }
+@media (max-width: 640px) { .banner-orta { min-height: 320px; } .banner-buyuk { min-height: 440px; } }
+.mr-ic { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+.metin-resim.resim-solda .mr-resim { order: -1; }
+.mr-metin h2 { margin: 0 0 12px; } .mr-metin p { color: var(--yazi-2); line-height: 1.6; }
+.mr-resim { border-radius: var(--r); }
+@media (max-width: 760px) { .mr-ic { grid-template-columns: 1fr; } .metin-resim.resim-solda .mr-resim { order: 0; } }
