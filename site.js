@@ -253,6 +253,19 @@
     form.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
+  // GİRİŞ KUTUSU ANA SAYFADA DURMAZ (kullanıcı: "müşteri girişi sağda üstte, ana sayfadan kaldıralım"): girişsiz
+  // ziyaretçide Koleksiyon bölümü gizli; sağ üstteki "Müşteri girişi" (ya da #koleksiyon bağlantısı) açar. Giriş
+  // yapılmışsa bölüm hep açık (portal orada).
+  const bolum = document.getElementById("koleksiyon");
+  let girisAcik = location.hash === "#koleksiyon";
+  const bolumGoster = () => { if (bolum) bolum.hidden = !(kod || girisAcik); };
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest('a[href="#koleksiyon"]');
+    if (!a || kod || girisAcik) return;
+    girisAcik = true; bolumGoster();
+  }, true);
+  window.addEventListener("hashchange", () => { if (location.hash === "#koleksiyon" && !girisAcik) { girisAcik = true; bolumGoster(); if (bolum) bolum.scrollIntoView(); } });
+
   function girisCiz(hata) {
     const kAd = el("input", { class: "giris-kutu", placeholder: T("kullaniciAdi"), autocomplete: "username", autocapitalize: "none", spellcheck: "false", maxlength: "40", "aria-label": T("kullaniciAdi"), name: "username" });
     const kSifre = el("input", { class: "giris-kutu", type: "password", placeholder: T("sifre"), autocomplete: "current-password", maxlength: "100", "aria-label": T("sifre"), name: "password" });
@@ -282,6 +295,7 @@
         });
     };
     alan.replaceChildren(form);
+    bolumGoster();
   }
 
   function yukle(yeniKod) {
@@ -302,6 +316,7 @@
   let aralik = { bas: new Date(Date.now() - 92 * 864e5).toISOString().slice(0, 10), bit: bugun() };
 
   function ciz() {
+    if (bolum) bolum.hidden = false;
     const ust = el("div", { class: "portal-ust" },
       el("span", {}, T("hosgeldiniz"), el("b", {}, veri.unvan || "")),
       el("button", { class: "bag", type: "button", onclick: cikis }, T("cikis")));
