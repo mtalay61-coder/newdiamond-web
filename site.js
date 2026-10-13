@@ -328,15 +328,25 @@
       });
   }
 
+  // ARAMA (ERP v1.658.0 — öneri 4): model adı, renk, tip (çevirileriyle) içinde; yazdıkça yalnız ızgara yenilenir
+  // (bütün portal yeniden çizilse kutu odağını kaybederdi). Tip düğmeleri aramayla birlikte çalışır.
+  let arama = "";
+  const kucuk = (s) => String(s || "").toLocaleLowerCase(window.DIL_BICIM || "tr-TR");
   function koleksiyonCiz() {
     const modeller = veri.modeller || [];
     const tipler = Array.from(new Set(modeller.map((u) => u.tip).filter(Boolean)));
     const suzgec = el("div", { class: "suzgec" });
+    const aramaKutu = el("input", { class: "giris-kutu arama-kutu", type: "search", placeholder: T("araYer"), value: arama, "aria-label": T("araYer"), "data-arama": "1" });
+    suzgec.append(aramaKutu);
     if (tipler.length > 1) ["__tumu", ...tipler].forEach((t) => suzgec.append(el("button", { type: "button", class: t === secili ? "etkin" : "", onclick: () => { secili = t; ciz(); } }, t === "__tumu" ? T("tumu") : cTip(t))));
     const izgara = el("div", { class: "izgara" });
-    const gorunen = modeller.filter((u) => secili === "__tumu" || u.tip === secili);
-    if (!gorunen.length) izgara.append(el("div", { class: "bilgi", style: "grid-column:1/-1" }, T("modelYok")));
-    gorunen.forEach((u) => izgara.append(urunKarti(u)));
+    const doldur = () => {
+      const q = kucuk(arama).trim();
+      const gorunen = modeller.filter((u) => (secili === "__tumu" || u.tip === secili) && (!q || [u.ad, cAd(u.id, u.ad), u.tip, cTip(u.tip), ...(u.renkler || []), ...(u.renkler || []).map(cRenk)].some((x) => kucuk(x).includes(q))));
+      izgara.replaceChildren(...(gorunen.length ? gorunen.map(urunKarti) : [el("div", { class: "bilgi", style: "grid-column:1/-1" }, q ? T("aramaSonucYok") : T("modelYok"))]));
+    };
+    aramaKutu.oninput = () => { arama = aramaKutu.value; doldur(); };
+    doldur();
     return el("div", {}, suzgec, el("div", { class: "portal-govde" }, izgara, sepetCiz()));
   }
 
@@ -446,7 +456,10 @@
     const talepBlok = talepler.length ? el("section", { class: "hesap-blok" }, el("h3", {}, T("siteden")),
       ...talepler.map((t) => el("div", { class: "sip-kart" },
         el("div", { class: "sip-bas" }, el("b", {}, tarihTR(String(t.tarih).slice(0, 10))), el("span", {}, t.toplamCift + " " + T("cift")),
-          el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : "sari") }, t.durum === "reddedildi" ? T("kabulEdilmedi") : T("onayBekliyor"))),
+          // DURUM (ERP v1.658.0 — öneri 2): siparişe çevrildiyse sipariş no; reddedildiyse ERP'de yazılan sebep.
+          el("span", { class: "rozet " + (t.durum === "reddedildi" ? "kirmizi" : t.durum === "siparis" ? "yesil" : "sari") },
+            t.durum === "reddedildi" ? T("kabulEdilmedi") : t.durum === "siparis" ? T("siparisOldu") + (t.siparisNo ? " · " + t.siparisNo : "") : T("onayBekliyor"))),
+        t.durum === "reddedildi" && t.redSebebi ? el("p", { class: "red-sebebi" }, T("sebep") + ": " + t.redSebebi) : null,
         el("div", { class: "talep-kalemler" }, ...(t.kalemler || []).map((k) => el("div", { class: "talep-kalem" },
           minik(hesapResmi(k), k.urunAd), el("span", {}, el("b", {}, cAd(k.urunId, k.urunAd)), " · ", cRenk(k.renk)),
           el("span", { class: "kucuk" }, k.miktar + " " + T("cift") + (Number(k.tutar) > 0 ? " · " + para(Number(k.tutar), k.paraBirimi) : " · " + T("fiyatOnayda")))))),
@@ -489,9 +502,15 @@
     const goster = (src) => resimKutu.replaceChildren(src ? el("img", { src, alt: cAd(u.id, u.ad), loading: "lazy" }) : el("span", { class: "yok" }, T("gorselYakinda")));
     goster(resimler[renk] || u.kapak_resmi);
     const rk = el("div", { class: "renkler" });
-    tumRenkler.forEach((r) => rk.append(el("button", { type: "button", class: "renk" + (r === renk ? " etkin" : ""), onclick: (e) => {
-      renk = r; rk.querySelectorAll(".renk").forEach((x) => x.classList.toggle("etkin", x === e.currentTarget)); goster(resimler[r] || u.kapak_resmi);
+    // STOK DURUMU (ERP v1.658.0 — öneri 6): seçili rengin kaba durumu, rakamsız (Stokta / Üretimde / Sipariş üzerine).
+    // Sunucu göndermiyorsa (eski SQL) hiç görünmez.
+    const sd = u.stok_durumu || {};
+    const durumEl = el("div", { class: "stok-durum" });
+    const durumYaz = () => { const d = sd[renk]; durumEl.hidden = !d; if (d) { durumEl.className = "stok-durum " + d; durumEl.textContent = T("stok_" + d); } };
+    tumRenkler.forEach((r) => rk.append(el("button", { type: "button", class: "renk" + (r === renk ? " etkin" : "") + (sd[r] ? " d-" + sd[r] : ""), onclick: (e) => {
+      renk = r; rk.querySelectorAll(".renk").forEach((x) => x.classList.toggle("etkin", x === e.currentTarget)); goster(resimler[r] || u.kapak_resmi); durumYaz();
     } }, cRenk(r))));
+    durumYaz();
     const alt = [cTip(u.tip), [u.sezon, u.sezon_yili].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
     return el("article", { class: "urun" }, resimKutu,
       el("div", { class: "urun-govde" },
@@ -499,7 +518,7 @@
         alt ? el("div", { class: "urun-alt" }, alt) : null,
         // FİYATSIZ MODEL (v1.652 — "fiyatları olmayan ürünler de listelensin … fiyat yokken de sipariş girişi olsun").
         u.fiyat != null ? el("div", { class: "fiyat" }, para(u.fiyat, u.para_birimi), el("span", {}, T("ciftBasi"))) : el("div", { class: "fiyat onayda" }, T("fiyatOnayda")),
-        rk,
+        rk, durumEl,
         siparisGirisi(u, () => renk)));
   }
 

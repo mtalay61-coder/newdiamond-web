@@ -257,3 +257,11 @@ footer .kap { display: flex; justify-content: space-between; gap: 12px; flex-wra
 /* Müşteri sayfası (musteri.html): giriş kutusu ortada, sayfa boş görünmesin. */
 .musteri-sayfa { min-height: calc(100vh - 140px); }
 .musteri-sayfa .portal-giris { margin: 0 auto; }
+
+/* ERP v1.658.0: arama, stok durumu, talep red sebebi */
+.arama-kutu { flex: 1 1 220px; min-width: 0; max-width: 340px; padding: 7px 14px; }
+.stok-durum { font-size: 12px; font-weight: 700; margin: 6px 0 2px; }
+.stok-durum.stokta { color: #2E7D4F; } .stok-durum.uretimde { color: #B7791F; } .stok-durum.siparis { color: var(--yazi-3); }
+.renk.d-stokta::before { content: "● "; color: #2E7D4F; } .renk.d-uretimde::before { content: "● "; color: #B7791F; }
+.red-sebebi { margin: 4px 0 0; font-size: 13px; color: #A33; }
+.suzgec:has(.arama-kutu) { margin-bottom: 14px; align-items: center; }
